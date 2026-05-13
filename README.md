@@ -36,6 +36,7 @@ Using [uc-integration-api](https://github.com/aitatoi/integration-python-library
     - [2 - Upload \& installation](#2---upload--installation)
       - [Upload in Web Configurator](#upload-in-web-configurator)
       - [Alternative - Upload via Core API or 3rd party tools](#alternative---upload-via-core-api-or-3rd-party-tools)
+    - [Updating](#updating)
   - [Run on a separate device as an external integration](#run-on-a-separate-device-as-an-external-integration)
     - [Remote requirements](#remote-requirements)
     - [Bare metal/VM](#bare-metalvm)
@@ -282,15 +283,11 @@ All health sensor data (light source timer, temperature and error/warning) will 
 
 #### Limitations / Disclaimer
 
-_⚠️ This requires firmware version 1.9.2 or newer and 2.8.3 to support select entities (installing firmware versions above 1.7.14 for Remote Two currently need beta updates to be enabled)._
+_⚠️ This requires firmware version 1.9.2 or newer and 2.8.3 to support select entities. Installing firmware versions above 1.7.14 for Remote Two currently need beta updates to be enabled._
 
 ##### Missing firmware features
 
 - The configuration file of custom integrations are not included in backups.
-- You currently can't update custom integrations.
-  - As a workaround you first need to delete the integration twice until it's not shown anymore on the integration page and then re-upload and re-configure the new version
-  - Do not remove any entities exposed by this integration from any activity or macro after you removed the integration and wait until the new version has been uploaded and configured again
-  - You may also need to re-add entities to the main pages after the update as they are automatically removed. Your activities and macros will stay the same and will not need any reconfiguration.
 
 #### 1 - Download integration driver
 
@@ -313,6 +310,10 @@ curl --location 'http://$IP/api/intg/install' \
 There is also a Core API GUI available at https://_Remote-IP_/doc/core-rest. Click on Authorize to log in (username: web-configurator, password: your PIN), scroll down to POST intg/install, click on Try it out, choose a file and then click on Execute.
 
 Alternatively you can also use the unofficial [UC Remote Toolkit](https://github.com/albaintor/UC-Remote-Two-Toolkit)
+
+#### Updating
+
+Since firmware version 2.9.3 there is a build-in update function in the web configurator. Go to _Integrations_ in the top menu, on the top right click on _Add new/Install custom_ and check _Update installed integration_ before uploading the new version.
 
 ### Run on a separate device as an external integration
 
