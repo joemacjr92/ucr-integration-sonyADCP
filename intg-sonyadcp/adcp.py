@@ -303,6 +303,21 @@ class Responses():
         COOLING2 = "\"cooling2\""
         INVALID = "\"Invalid\"" # Possible response from signal ?, no separate class for other signal values as there are too many of them and query only anyway
 
+    class ColorFormats (StrEnum):
+        """This class is used to define color formats that can be returned by the color_format_info query command"""
+
+        YCBCR420 = "\"ycbcr420\""
+        YCBCR422 = "\"ycbcr422\""
+        YCBCR444 = "\"ycbcr444\""
+        RGB = "\"rgb\""
+
+    class HDRFormats (StrEnum):
+        """This class is used to define HDR formats that can be returned by the hdr_info query command"""
+
+        HLG = "\"hlg\""
+        HDR10 = "\"hdr10\""
+        HDR_REF = "\"hdr_reference\""
+
     class Errors (StrEnum):
         """This class is used to define errors that will be returned with the error ? get command. Multiple values can be returned in a json array"""
         NO = "\"no_err\""
@@ -315,7 +330,7 @@ class Responses():
         LIGHT_SRC = "\"err_light_src\""
         LENS_COVER = "\"err_lens_cover\""
         SHOCK = "\"err_shock\""
-        NOLENS = "\"err_nolens\""
+        NO_LENS = "\"err_nolens\""
         ANGLE = "\"err_attitude\""
         TEMP = "\"err_temp\""
         FAN = "\"err_fan\""
@@ -324,7 +339,7 @@ class Responses():
         ASSY = "\"err_assy\""
         BALLAST = "\"err_ballast_update\""
 
-    class Warning (StrEnum):
+    class Warnings (StrEnum):
         """This class is used to define warnings that will be returned with the warning ? get command. Multiple values can be returned in a json array"""
         NO = "\"no_warn\""
         LIGHT_SRC_LIFE = "\"warn_light_src_life\""

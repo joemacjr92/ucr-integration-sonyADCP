@@ -1,6 +1,5 @@
 """This module contains the setup dataclasses and functions, entity definition classes and various mapping classes and functions"""
 
-from enum import StrEnum
 from dataclasses import dataclass, fields
 
 import json
@@ -16,6 +15,8 @@ import ucapi
 import media_player
 import remote
 import adcp as ADCP
+import i18n
+import enums
 
 _LOG = logging.getLogger(__name__)
 
@@ -53,202 +54,6 @@ class SetupData:
     setup_password_masked: str = "******"
     setup_temp_device_name: str = "temp-device"
 
-class Messages(StrEnum):
-    #TODO #WAIT Create different language specific message classes that will be used depending on what language the remote is set to
-    # when ucapi is updated (via ucapi call api.get_localization_cfg)
-    """Defines all messages used as values in the integration"""
-    TEMPORARILY_UNAVAILABLE = "Temporarily Unavailable"
-    ERROR = "Polling Error"
-    NO_SIGNAL = "No Signal"
-    VIDEO_MUTED = "Video Muted"
-    NO_ERROR = "No Error"
-    NO_WARNING = "No Warning"
-
-class Sources (StrEnum):
-    """Defines all sources for the media player entity"""
-    HDMI_1 = "HDMI 1"
-    HDMI_2 = "HDMI 2"
-    UNKNOWN = "Unknown"
-
-class SimpleCommands (StrEnum):
-    """Defines all simple commands for the media player and remote entity.
-    Maximum 20 upper case only characters including -/_.:+#*°@%()? allowed"""
-
-    INPUT_HDMI1 =                                               "INPUT_HDMI_1"
-    INPUT_HDMI2 =                                               "INPUT_HDMI_2"
-    MODE_PRESET_REF =                                           "MODE_PIC_REF"
-    MODE_PRESET_USER =                                          "MODE_PIC_USER"
-    MODE_PRESET_USER1 =                                         "MODE_PIC_USER1"
-    MODE_PRESET_USER2 =                                         "MODE_PIC_USER2"
-    MODE_PRESET_USER3 =                                         "MODE_PIC_USER3"
-    MODE_PRESET_TV =                                            "MODE_PIC_TV"
-    MODE_PRESET_PHOTO =                                         "MODE_PIC_PHOTO"
-    MODE_PRESET_GAME =                                          "MODE_PIC_GAME"
-    MODE_PRESET_BRIGHT_CINEMA =                                 "MODE_PIC_BRT_CINEMA"
-    MODE_PRESET_BRIGHT_TV =                                     "MODE_PIC_BRT_TV"
-    MODE_PRESET_CINEMA_FILM_1 =                                 "MODE_PIC_CINE_FILM_1"
-    MODE_PRESET_CINEMA_FILM_2 =                                 "MODE_PIC_CINE_FILM_2"
-    MODE_ASPECT_RATIO_NORMAL =                                  "MODE_AR_NORMAL"
-    MODE_ASPECT_RATIO_ZOOM_1_85 =                               "MODE_AR_ZOOM_1.85"
-    MODE_ASPECT_RATIO_ZOOM_2_35 =                               "MODE_AR_ZOOM_2.35"
-    MODE_ASPECT_RATIO_V_STRETCH =                               "MODE_AR_V_STRETCH"
-    MODE_ASPECT_RATIO_SQUEEZE =                                 "MODE_AR_SQUEEZE"
-    MODE_ASPECT_RATIO_STRETCH =                                 "MODE_AR_STRETCH"
-    MODE_ASPECT_RATIO_ASPECT_RATIO_SCALING =                    "MODE_AR_RATIO_SCALE"
-    MODE_MOTIONFLOW_OFF =                                       "MODE_MOTION_OFF"
-    MODE_MOTIONFLOW_SMOOTH_HIGH =                               "MODE_MOTION_SMTH_HIGH"
-    MODE_MOTIONFLOW_SMOOTH_LOW =                                "MODE_MOTION_SMTH_LOW"
-    MODE_MOTIONFLOW_IMPULSE =                                   "MODE_MOTION_IMPULSE"
-    MODE_MOTIONFLOW_COMBINATION =                               "MODE_MOTION_COMB"
-    MODE_MOTIONFLOW_TRUE_CINEMA =                               "MODE_MOTION_TRUE_CIN"
-    MODE_HDR_ON =                                               "MODE_HDR_ON"
-    MODE_HDR_OFF =                                              "MODE_HDR_OFF"
-    MODE_HDR_AUTO =                                             "MODE_HDR_AUTO"
-    MODE_HDR_HDR10 =                                            "MODE_HDR_HDR10"
-    MODE_HDR_HDR_REF =                                          "MODE_HDR_HDR_REF"
-    MODE_HDR_HLG =                                              "MODE_HDR_HLG"
-    MODE_HDR_DYNAMIC_TONE_MAPPING_1 =                           "MODE_HDR_TONEMAP_1"
-    MODE_HDR_DYNAMIC_TONE_MAPPING_2 =                           "MODE_HDR_TONEMAP_2"
-    MODE_HDR_DYNAMIC_TONE_MAPPING_3 =                           "MODE_HDR_TONEMAP_3"
-    MODE_HDR_DYNAMIC_TONE_MAPPING_OFF =                         "MODE_HDR_TONEMAP_OFF"
-    MODE_CONTRAST_ENHANCER_HIGH =                               "MODE_CONTR_ENHA_HIGH"
-    MODE_CONTRAST_ENHANCER_MID =                                "MODE_CONTR_ENHA_MID"
-    MODE_CONTRAST_ENHANCER_LOW =                                "MODE_CONTR_ENHA_LOW"
-    MODE_CONTRAST_ENHANCER_OFF =                                "MODE_CONTR_ENHA_OFF"
-    MODE_2D_3D_SELECT_AUTO =                                    "MODE_2D/3D_SEL_AUTO"
-    MODE_2D_3D_SELECT_3D =                                      "MODE_2D/3D_SEL_3D"
-    MODE_2D_3D_SELECT_2D =                                      "MODE_2D/3D_SEL_2D"
-    MODE_3D_FORMAT_SIMULATED_3D =                               "MODE_3D_SIM_3D"
-    MODE_3D_FORMAT_SIDE_BY_SIDE =                               "MODE_3D_SIDE_BY_SIDE"
-    MODE_3D_FORMAT_OVER_UNDER =                                 "MODE_3D_OVER_UNDER"
-    MODE_DYNAMIC_IRIS_CONTROL_OFF =                             "MODE_DYN_IRIS_OFF"
-    MODE_DYNAMIC_IRIS_CONTROL_FULL =                            "MODE_DYN_IRIS_FULL"
-    MODE_DYNAMIC_IRIS_CONTROL_LIMITED =                         "MODE_DYN_IRIS_LIM"
-    MODE_DYNAMIC_LIGHT_CONTROL_OFF =                            "MODE_DYN_LIGHT_OFF"
-    MODE_DYNAMIC_LIGHT_CONTROL_FULL =                           "MODE_DYN_LIGHT_FULL"
-    MODE_DYNAMIC_LIGHT_CONTROL_LIMITED =                        "MODE_DYN_LIGHT_LIM"
-    INPUT_LAG_REDUCTION_ON =                                    "MODE_LAG_REDUCE_ON"
-    INPUT_LAG_REDUCTION_OFF =                                   "MODE_LAG_REDUCE_OFF"
-    LENS_SHIFT_UP =                                             "LENS_SHIFT_UP"
-    LENS_SHIFT_DOWN =                                           "LENS_SHIFT_DOWN"
-    LENS_SHIFT_LEFT =                                           "LENS_SHIFT_LEFT"
-    LENS_SHIFT_RIGHT =                                          "LENS_SHIFT_RIGHT"
-    LENS_FOCUS_FAR =                                            "LENS_FOCUS_FAR"
-    LENS_FOCUS_NEAR =                                           "LENS_FOCUS_NEAR"
-    LENS_ZOOM_LARGE =                                           "LENS_ZOOM_LARGE"
-    LENS_ZOOM_SMALL =                                           "LENS_ZOOM_SMALL"
-    PICTURE_POSITION_SELECT_1_85 =                              "PIC_POS_SEL_1:85"
-    PICTURE_POSITION_SELECT_2_35 =                              "PIC_POS_SEL_2:35"
-    PICTURE_POSITION_SELECT_CUSTOM_1 =                          "PIC_POS_SEL_CUSTOM_1"
-    PICTURE_POSITION_SELECT_CUSTOM_2 =                          "PIC_POS_SEL_CUSTOM_2"
-    PICTURE_POSITION_SELECT_CUSTOM_3 =                          "PIC_POS_SEL_CUSTOM_3"
-    PICTURE_POSITION_SELECT_CUSTOM_4 =                          "PIC_POS_SEL_CUSTOM_4"
-    PICTURE_POSITION_SELECT_CUSTOM_5 =                          "PIC_POS_SEL_CUSTOM_5"
-    PICTURE_POSITION_SAVE_1_85 =                                "PIC_POS_SAV_1:85"
-    PICTURE_POSITION_SAVE_2_35 =                                "PIC_POS_SAV_2:35"
-    PICTURE_POSITION_SAVE_CUSTOM_1 =                            "PIC_POS_SAV_CUSTOM_1"
-    PICTURE_POSITION_SAVE_CUSTOM_2 =                            "PIC_POS_SAV_CUSTOM_2"
-    PICTURE_POSITION_SAVE_CUSTOM_3 =                            "PIC_POS_SAV_CUSTOM_3"
-    PICTURE_POSITION_SAVE_CUSTOM_4 =                            "PIC_POS_SAV_CUSTOM_4"
-    PICTURE_POSITION_SAVE_CUSTOM_5 =                            "PIC_POS_SAV_CUSTOM_5"
-    PICTURE_MUTING_TOGGLE =                                     "MUTING_PIC_TOGGLE"
-    LASER_BRIGHTNESS_UP =                                       "LASER_DIM_UP"
-    LASER_BRIGHTNESS_DOWN =                                     "LASER_DIM_DOWN"
-    IRIS_BRIGHTNESS_UP =                                        "IRIS_BRIGHTNESS_UP"
-    IRIS_BRIGHTNESS_DOWN =                                      "IRIS_BRIGHTNESS_DOWN"
-    LAMP_CONTROL_LOW =                                          "LAMP_CONTROL_LOW"
-    LAMP_CONTROL_HIGH =                                         "LAMP_CONTROL_HIGH"
-    MENU_POSITION_BOTTOM_LEFT =                                 "MENU_POS_BOTTOM_LEFT"
-    MENU_POSITION_CENTER =                                      "MENU_POS_CENTER"
-    UPDATE_VIDEO_INFO =                                         "UPDATE_VIDEO_INFO"
-    UPDATE_HEALTH_STATUS =                                      "UPDATE_HEALTH_STATUS"
-    UPDATE_ALL_SENSORS =                                        "UPDATE_ALL_SENSORS"
-    UPDATE_SELECT_OPTIONS =                                     "UPDATE_SELECT_OPTION"
-
-class SensorVideoSignalTypes (StrEnum):
-    """
-    Defines all setting types needed for the video signal sensor.
-    These are separated from the other sensor types as they are combined in the video signal sensor and need to be queried separately
-    Color Space and 2d/3d mode are settings and included in SensorTypes
-    """
-    RESOLUTION = "resolution"
-    DYNAMIC_RANGE = "dynamic-range"
-    COLOR_FORMAT = "color-format"
-
-class SensorSystemStatusTypes (StrEnum):
-    """
-    Defines all setting types needed for the system status sensor.
-    These are separated from the other sensor types as they are combined in the system status sensor and need to be queried separately
-    """
-    ERROR = "error"
-    WARNING = "warning"
-
-class SensorTypes (StrEnum):
-    """Defines all setting types that can be queried from the projector and used for sensors in the integration"""
-    VIDEO_SIGNAL = "video"
-    TEMPERATURE = "temp"
-    LIGHT_TIMER = "light"
-    SYSTEM_STATUS = "system"
-    POWER_STATUS = "power-status"
-    INPUT = "input"
-    PICTURE_MUTING = "picture-muting"
-    PICTURE_PRESET = "picture-preset"
-    ASPECT = "aspect"
-    PICTURE_POSITION_SELECT = "picture-position"
-    HDR_STATUS = "hdr-status"
-    HDR_DYNAMIC_TONE_MAPPING = "hdr-dynamic-tone-mapping"
-    LAMP_CONTROL = "lamp-control"
-    DYNAMIC_IRIS_CONTROL = "dynamic-iris-control"
-    DYNAMIC_LIGHT_CONTROL = "dynamic-light-control"
-    MOTIONFLOW = "motionflow"
-    FORMAT_3D = "3d-format"
-    INPUT_LAG_REDUCTION = "input-lag-reduction"
-    MENU_POSITION = "menu-position"
-    COLOR_TEMPERATURE = "color-temperature"
-    COLOR_SPACE = "color-space"
-    GAMMA = "gamma"
-    CONTRAST_ENHANCER = "contrast-enhancer"
-    MODE_2D_3D = "2d/3d-mode"
-    LASER_BRIGHTNESS = "laser-brightness"
-    IRIS_BRIGHTNESS = "iris-brightness"
-
-    @staticmethod
-    def get_all():
-        """Get a list of all sensor types defined in this class"""
-        values = [member for member in SensorTypes]
-
-        return values
-
-class SelectTypes (StrEnum):
-    """Defines all setting types that can be set with select commands and need to be queried for their options"""
-    POWER = "power" #No query possible. Use power-status ? instead which is query only
-    INPUT = "input"
-    PICTURE_MUTING = "picture-muting"
-    PICTURE_PRESET = "picture-preset"
-    ASPECT = "aspect"
-    PICTURE_POSITION_SELECT = "picture-position-select"
-    PICTURE_POSITION_SAVE = "picture-position-save"
-    HDR_FORMAT = "hdr-format"
-    HDR_DYNAMIC_TONE_MAPPING = "hdr-dynamic-tone-mapping"
-    LAMP_CONTROL = "lamp-control"
-    DYNAMIC_IRIS_CONTROL = "dynamic-iris-control"
-    DYNAMIC_LIGHT_CONTROL = "dynamic-light-control"
-    MOTIONFLOW = "motionflow"
-    FORMAT_3D = "3d-format"
-    INPUT_LAG_REDUCTION = "input-lag-reduction"
-    MENU_POSITION = "menu-position"
-    COLOR_TEMPERATURE = "color-temperature"
-    COLOR_SPACE = "color-space"
-    GAMMA = "gamma"
-    CONTRAST_ENHANCER = "contrast-enhancer"
-
-    @staticmethod
-    def get_all():
-        """Get a list of all select types defined in this class"""
-        values = [member for member in SelectTypes]
-
-        return values
-
 
 
 class UC2ADCP:
@@ -265,161 +70,161 @@ class UC2ADCP:
         ucapi.media_player.Commands.CURSOR_LEFT: ADCP.Commands.Key.LEFT,
         ucapi.media_player.Commands.CURSOR_RIGHT: ADCP.Commands.Key.RIGHT,
         ucapi.media_player.Commands.CURSOR_ENTER: ADCP.Commands.Key.ENTER,
-        SimpleCommands.LENS_SHIFT_UP: ADCP.Commands.Key.LENS_SHIFT_UP,
-        SimpleCommands.LENS_SHIFT_DOWN: ADCP.Commands.Key.LENS_SHIFT_DOWN,
-        SimpleCommands.LENS_SHIFT_LEFT: ADCP.Commands.Key.LENS_SHIFT_LEFT,
-        SimpleCommands.LENS_SHIFT_RIGHT: ADCP.Commands.Key.LENS_SHIFT_RIGHT,
-        SimpleCommands.LENS_FOCUS_FAR: ADCP.Commands.Key.LENS_FOCUS_FAR,
-        SimpleCommands.LENS_FOCUS_NEAR: ADCP.Commands.Key.LENS_FOCUS_NEAR,
-        SimpleCommands.LENS_ZOOM_LARGE: ADCP.Commands.Key.LENS_ZOOM_LARGE,
-        SimpleCommands.LENS_ZOOM_SMALL: ADCP.Commands.Key.LENS_ZOOM_SMALL,
+        enums.SimpleCommands.LENS_SHIFT_UP: ADCP.Commands.Key.LENS_SHIFT_UP,
+        enums.SimpleCommands.LENS_SHIFT_DOWN: ADCP.Commands.Key.LENS_SHIFT_DOWN,
+        enums.SimpleCommands.LENS_SHIFT_LEFT: ADCP.Commands.Key.LENS_SHIFT_LEFT,
+        enums.SimpleCommands.LENS_SHIFT_RIGHT: ADCP.Commands.Key.LENS_SHIFT_RIGHT,
+        enums.SimpleCommands.LENS_FOCUS_FAR: ADCP.Commands.Key.LENS_FOCUS_FAR,
+        enums.SimpleCommands.LENS_FOCUS_NEAR: ADCP.Commands.Key.LENS_FOCUS_NEAR,
+        enums.SimpleCommands.LENS_ZOOM_LARGE: ADCP.Commands.Key.LENS_ZOOM_LARGE,
+        enums.SimpleCommands.LENS_ZOOM_SMALL: ADCP.Commands.Key.LENS_ZOOM_SMALL,
         #ADCP select commands
         ucapi.media_player.Commands.ON: f"{ADCP.Commands.Select.POWER} {ADCP.Values.States.ON}",
         ucapi.media_player.Commands.OFF: f"{ADCP.Commands.Select.POWER} {ADCP.Values.States.OFF}",
         ucapi.media_player.Commands.MUTE: f"{ADCP.Commands.Select.MUTE} {ADCP.Values.States.ON}",
         ucapi.media_player.Commands.UNMUTE: f"{ADCP.Commands.Select.MUTE} {ADCP.Values.States.OFF}",
-        SimpleCommands.INPUT_HDMI1: f"{ADCP.Commands.Select.INPUT} {ADCP.Values.Inputs.HDMI1}",
-        SimpleCommands.INPUT_HDMI2: f"{ADCP.Commands.Select.INPUT} {ADCP.Values.Inputs.HDMI2}",
-        SimpleCommands.MODE_PRESET_BRIGHT_CINEMA: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.BRIGHT_CINEMA}",
-        SimpleCommands.MODE_PRESET_BRIGHT_TV: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.BRIGHT_TV}",
-        SimpleCommands.MODE_PRESET_CINEMA_FILM_1: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.CINEMA_FILM1}",
-        SimpleCommands.MODE_PRESET_CINEMA_FILM_2: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.CINEMA_FILM2}",
-        SimpleCommands.MODE_PRESET_REF: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.REFERENCE}",
-        SimpleCommands.MODE_PRESET_TV: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.TV}",
-        SimpleCommands.MODE_PRESET_PHOTO: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.PHOTO}",
-        SimpleCommands.MODE_PRESET_GAME: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.GAME}",
-        SimpleCommands.MODE_PRESET_USER: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER}",
-        SimpleCommands.MODE_PRESET_USER1: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER1}",
-        SimpleCommands.MODE_PRESET_USER2: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER2}",
-        SimpleCommands.MODE_PRESET_USER3: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER3}",
-        SimpleCommands.MODE_ASPECT_RATIO_NORMAL: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.NORMAL}",
-        SimpleCommands.MODE_ASPECT_RATIO_V_STRETCH: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.V_STRETCH}",
-        SimpleCommands.MODE_ASPECT_RATIO_ZOOM_1_85: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.ZOOM_1_85}",
-        SimpleCommands.MODE_ASPECT_RATIO_ZOOM_2_35: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.ZOOM_2_35}",
-        SimpleCommands.MODE_ASPECT_RATIO_STRETCH: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.STRETCH}",
-        SimpleCommands.MODE_ASPECT_RATIO_SQUEEZE: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.SQUEEZE}",
-        SimpleCommands.MODE_ASPECT_RATIO_ASPECT_RATIO_SCALING: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.ASPECT_RATIO_SCALING}",
-        SimpleCommands.MODE_MOTIONFLOW_OFF: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.OFF}",
-        SimpleCommands.MODE_MOTIONFLOW_COMBINATION: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.COMBINATION}",
-        SimpleCommands.MODE_MOTIONFLOW_SMOOTH_HIGH: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.SMOOTH_HIGH}",
-        SimpleCommands.MODE_MOTIONFLOW_SMOOTH_LOW: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.SMOOTH_LOW}",
-        SimpleCommands.MODE_MOTIONFLOW_IMPULSE: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.IMPULSE}",
-        SimpleCommands.MODE_MOTIONFLOW_TRUE_CINEMA: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.TRUE_CINEMA}",
-        SimpleCommands.MODE_HDR_ON: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.ON}",
-        SimpleCommands.MODE_HDR_OFF: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.OFF}",
-        SimpleCommands.MODE_HDR_AUTO: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.AUTO}",
-        SimpleCommands.MODE_HDR_HDR10: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.HDR10}",
-        SimpleCommands.MODE_HDR_HDR_REF: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.HDR_REF}",
-        SimpleCommands.MODE_HDR_HLG: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.HLG}",
-        SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_1: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.MODE_1}",
-        SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_2: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.MODE_2}",
-        SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_3: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.MODE_3}",
-        SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_OFF: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.OFF}",
-        SimpleCommands.MODE_2D_3D_SELECT_AUTO: f"{ADCP.Commands.Select.MODE_2D_3D} {ADCP.Values.Mode2D3D.MODE_AUTO}",
-        SimpleCommands.MODE_2D_3D_SELECT_3D: f"{ADCP.Commands.Select.MODE_2D_3D} {ADCP.Values.Mode2D3D.MODE_3D}",
-        SimpleCommands.MODE_2D_3D_SELECT_2D: f"{ADCP.Commands.Select.MODE_2D_3D} {ADCP.Values.Mode2D3D.MODE_2D}",
-        SimpleCommands.MODE_3D_FORMAT_SIMULATED_3D: f"{ADCP.Commands.Select.MODE_3D_FORMAT} {ADCP.Values.Mode3DFormat.SIMULATED}",
-        SimpleCommands.MODE_3D_FORMAT_SIDE_BY_SIDE: f"{ADCP.Commands.Select.MODE_3D_FORMAT} {ADCP.Values.Mode3DFormat.SIDE_BY_SIDE}",
-        SimpleCommands.MODE_3D_FORMAT_OVER_UNDER: f"{ADCP.Commands.Select.MODE_3D_FORMAT} {ADCP.Values.Mode3DFormat.OVER_UNDER}",
-        SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_OFF: f"{ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL} {ADCP.Values.LightControl.OFF}",
-        SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_FULL: f"{ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL} {ADCP.Values.LightControl.FULL}",
-        SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_LIMITED: f"{ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL} {ADCP.Values.LightControl.LIMITED}",
-        SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_OFF: f"{ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL} {ADCP.Values.LightControl.OFF}",
-        SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_FULL: f"{ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL} {ADCP.Values.LightControl.FULL}",
-        SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_LIMITED: f"{ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL} {ADCP.Values.LightControl.LIMITED}",
-        SimpleCommands.MODE_CONTRAST_ENHANCER_OFF: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.OFF}",
-        SimpleCommands.MODE_CONTRAST_ENHANCER_LOW: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.LOW}",
-        SimpleCommands.MODE_CONTRAST_ENHANCER_MID: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.MID}",
-        SimpleCommands.MODE_CONTRAST_ENHANCER_HIGH: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.HIGH}",
-        SimpleCommands.PICTURE_POSITION_SELECT_1_85: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.PP_1_85}",
-        SimpleCommands.PICTURE_POSITION_SELECT_2_35: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.PP_2_35}",
-        SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_1: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM1}",
-        SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_2: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM2}",
-        SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_3: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM3}",
-        SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_4: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM4}",
-        SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_5: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM5}",
-        SimpleCommands.PICTURE_POSITION_SAVE_1_85: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.PP_1_85}",
-        SimpleCommands.PICTURE_POSITION_SAVE_2_35: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.PP_2_35}",
-        SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_1: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM1}",
-        SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_2: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM2}",
-        SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_3: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM3}",
-        SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_4: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM4}",
-        SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_5: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM5}",
-        SimpleCommands.LAMP_CONTROL_LOW: f"{ADCP.Commands.Select.LAMP_CONTROL} {ADCP.Values.LampControl.LOW}",
-        SimpleCommands.LAMP_CONTROL_HIGH: f"{ADCP.Commands.Select.LAMP_CONTROL} {ADCP.Values.LampControl.HIGH}",
-        SimpleCommands.INPUT_LAG_REDUCTION_ON: f"{ADCP.Commands.Select.INPUT_LAG_REDUCTION} {ADCP.Values.States.ON}",
-        SimpleCommands.INPUT_LAG_REDUCTION_OFF: f"{ADCP.Commands.Select.INPUT_LAG_REDUCTION} {ADCP.Values.States.OFF}",
-        SimpleCommands.MENU_POSITION_BOTTOM_LEFT: f"{ADCP.Commands.Select.MENU_POSITION} {ADCP.Values.MenuPosition.BOTTOM_LEFT}",
-        SimpleCommands.MENU_POSITION_CENTER: f"{ADCP.Commands.Select.MENU_POSITION} {ADCP.Values.MenuPosition.CENTER}",
+        enums.SimpleCommands.INPUT_HDMI1: f"{ADCP.Commands.Select.INPUT} {ADCP.Values.Inputs.HDMI1}",
+        enums.SimpleCommands.INPUT_HDMI2: f"{ADCP.Commands.Select.INPUT} {ADCP.Values.Inputs.HDMI2}",
+        enums.SimpleCommands.MODE_PRESET_BRIGHT_CINEMA: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.BRIGHT_CINEMA}",
+        enums.SimpleCommands.MODE_PRESET_BRIGHT_TV: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.BRIGHT_TV}",
+        enums.SimpleCommands.MODE_PRESET_CINEMA_FILM_1: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.CINEMA_FILM1}",
+        enums.SimpleCommands.MODE_PRESET_CINEMA_FILM_2: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.CINEMA_FILM2}",
+        enums.SimpleCommands.MODE_PRESET_REF: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.REFERENCE}",
+        enums.SimpleCommands.MODE_PRESET_TV: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.TV}",
+        enums.SimpleCommands.MODE_PRESET_PHOTO: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.PHOTO}",
+        enums.SimpleCommands.MODE_PRESET_GAME: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.GAME}",
+        enums.SimpleCommands.MODE_PRESET_USER: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER}",
+        enums.SimpleCommands.MODE_PRESET_USER1: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER1}",
+        enums.SimpleCommands.MODE_PRESET_USER2: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER2}",
+        enums.SimpleCommands.MODE_PRESET_USER3: f"{ADCP.Commands.Select.PICTURE_MODE} {ADCP.Values.PictureModes.USER3}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_NORMAL: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.NORMAL}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_V_STRETCH: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.V_STRETCH}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_ZOOM_1_85: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.ZOOM_1_85}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_ZOOM_2_35: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.ZOOM_2_35}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_STRETCH: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.STRETCH}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_SQUEEZE: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.SQUEEZE}",
+        enums.SimpleCommands.MODE_ASPECT_RATIO_ASPECT_RATIO_SCALING: f"{ADCP.Commands.Select.ASPECT} {ADCP.Values.Aspect.ASPECT_RATIO_SCALING}",
+        enums.SimpleCommands.MODE_MOTIONFLOW_OFF: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.OFF}",
+        enums.SimpleCommands.MODE_MOTIONFLOW_COMBINATION: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.COMBINATION}",
+        enums.SimpleCommands.MODE_MOTIONFLOW_SMOOTH_HIGH: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.SMOOTH_HIGH}",
+        enums.SimpleCommands.MODE_MOTIONFLOW_SMOOTH_LOW: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.SMOOTH_LOW}",
+        enums.SimpleCommands.MODE_MOTIONFLOW_IMPULSE: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.IMPULSE}",
+        enums.SimpleCommands.MODE_MOTIONFLOW_TRUE_CINEMA: f"{ADCP.Commands.Select.MOTIONFLOW} {ADCP.Values.Motionflow.TRUE_CINEMA}",
+        enums.SimpleCommands.MODE_HDR_ON: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.ON}",
+        enums.SimpleCommands.MODE_HDR_OFF: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.OFF}",
+        enums.SimpleCommands.MODE_HDR_AUTO: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.AUTO}",
+        enums.SimpleCommands.MODE_HDR_HDR10: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.HDR10}",
+        enums.SimpleCommands.MODE_HDR_HDR_REF: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.HDR_REF}",
+        enums.SimpleCommands.MODE_HDR_HLG: f"{ADCP.Commands.Select.HDR} {ADCP.Values.HDR.HLG}",
+        enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_1: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.MODE_1}",
+        enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_2: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.MODE_2}",
+        enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_3: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.MODE_3}",
+        enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_OFF: f"{ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING} {ADCP.Values.HDRDynToneMapping.OFF}",
+        enums.SimpleCommands.MODE_2D_3D_SELECT_AUTO: f"{ADCP.Commands.Select.MODE_2D_3D} {ADCP.Values.Mode2D3D.MODE_AUTO}",
+        enums.SimpleCommands.MODE_2D_3D_SELECT_3D: f"{ADCP.Commands.Select.MODE_2D_3D} {ADCP.Values.Mode2D3D.MODE_3D}",
+        enums.SimpleCommands.MODE_2D_3D_SELECT_2D: f"{ADCP.Commands.Select.MODE_2D_3D} {ADCP.Values.Mode2D3D.MODE_2D}",
+        enums.SimpleCommands.MODE_3D_FORMAT_SIMULATED_3D: f"{ADCP.Commands.Select.MODE_3D_FORMAT} {ADCP.Values.Mode3DFormat.SIMULATED}",
+        enums.SimpleCommands.MODE_3D_FORMAT_SIDE_BY_SIDE: f"{ADCP.Commands.Select.MODE_3D_FORMAT} {ADCP.Values.Mode3DFormat.SIDE_BY_SIDE}",
+        enums.SimpleCommands.MODE_3D_FORMAT_OVER_UNDER: f"{ADCP.Commands.Select.MODE_3D_FORMAT} {ADCP.Values.Mode3DFormat.OVER_UNDER}",
+        enums.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_OFF: f"{ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL} {ADCP.Values.LightControl.OFF}",
+        enums.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_FULL: f"{ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL} {ADCP.Values.LightControl.FULL}",
+        enums.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_LIMITED: f"{ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL} {ADCP.Values.LightControl.LIMITED}",
+        enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_OFF: f"{ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL} {ADCP.Values.LightControl.OFF}",
+        enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_FULL: f"{ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL} {ADCP.Values.LightControl.FULL}",
+        enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_LIMITED: f"{ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL} {ADCP.Values.LightControl.LIMITED}",
+        enums.SimpleCommands.MODE_CONTRAST_ENHANCER_OFF: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.OFF}",
+        enums.SimpleCommands.MODE_CONTRAST_ENHANCER_LOW: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.LOW}",
+        enums.SimpleCommands.MODE_CONTRAST_ENHANCER_MID: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.MID}",
+        enums.SimpleCommands.MODE_CONTRAST_ENHANCER_HIGH: f"{ADCP.Commands.Select.CONTRAST_ENHANCER} {ADCP.Values.ContrastEnhancer.HIGH}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_1_85: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.PP_1_85}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_2_35: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.PP_2_35}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_1: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM1}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_2: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM2}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_3: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM3}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_4: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM4}",
+        enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_5: f"{ADCP.Commands.Select.PICTURE_POSITION_SELECT} {ADCP.Values.PicturePositions.CUSTOM5}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_1_85: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.PP_1_85}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_2_35: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.PP_2_35}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_1: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM1}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_2: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM2}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_3: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM3}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_4: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM4}",
+        enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_5: f"{ADCP.Commands.Execute.PICTURE_POSITION_SAVE} {ADCP.Values.PicturePositionsManage.CUSTOM5}",
+        enums.SimpleCommands.LAMP_CONTROL_LOW: f"{ADCP.Commands.Select.LAMP_CONTROL} {ADCP.Values.LampControl.LOW}",
+        enums.SimpleCommands.LAMP_CONTROL_HIGH: f"{ADCP.Commands.Select.LAMP_CONTROL} {ADCP.Values.LampControl.HIGH}",
+        enums.SimpleCommands.INPUT_LAG_REDUCTION_ON: f"{ADCP.Commands.Select.INPUT_LAG_REDUCTION} {ADCP.Values.States.ON}",
+        enums.SimpleCommands.INPUT_LAG_REDUCTION_OFF: f"{ADCP.Commands.Select.INPUT_LAG_REDUCTION} {ADCP.Values.States.OFF}",
+        enums.SimpleCommands.MENU_POSITION_BOTTOM_LEFT: f"{ADCP.Commands.Select.MENU_POSITION} {ADCP.Values.MenuPosition.BOTTOM_LEFT}",
+        enums.SimpleCommands.MENU_POSITION_CENTER: f"{ADCP.Commands.Select.MENU_POSITION} {ADCP.Values.MenuPosition.CENTER}",
         #ADCP numeric commands
-        SimpleCommands.LASER_BRIGHTNESS_UP: f"{ADCP.Commands.Numeric.LASER_BRIGHTNESS} {ADCP.Parameters.RELATIVE} +10",
-        SimpleCommands.LASER_BRIGHTNESS_DOWN: f"{ADCP.Commands.Numeric.LASER_BRIGHTNESS} {ADCP.Parameters.RELATIVE} -10",
-        SimpleCommands.IRIS_BRIGHTNESS_UP: f"{ADCP.Commands.Numeric.IRIS_BRIGHTNESS} {ADCP.Parameters.RELATIVE} +10",
-        SimpleCommands.IRIS_BRIGHTNESS_DOWN: f"{ADCP.Commands.Numeric.IRIS_BRIGHTNESS} {ADCP.Parameters.RELATIVE} -10",
+        enums.SimpleCommands.LASER_BRIGHTNESS_UP: f"{ADCP.Commands.Numeric.LASER_BRIGHTNESS} {ADCP.Parameters.RELATIVE} +10",
+        enums.SimpleCommands.LASER_BRIGHTNESS_DOWN: f"{ADCP.Commands.Numeric.LASER_BRIGHTNESS} {ADCP.Parameters.RELATIVE} -10",
+        enums.SimpleCommands.IRIS_BRIGHTNESS_UP: f"{ADCP.Commands.Numeric.IRIS_BRIGHTNESS} {ADCP.Parameters.RELATIVE} +10",
+        enums.SimpleCommands.IRIS_BRIGHTNESS_DOWN: f"{ADCP.Commands.Numeric.IRIS_BRIGHTNESS} {ADCP.Parameters.RELATIVE} -10",
         #Setting sensor commands
             #Query commands
-            SensorTypes.POWER_STATUS : ADCP.Commands.Query.POWER_STATUS,
-            SensorTypes.TEMPERATURE : ADCP.Commands.Query.TEMPERATURE,
-            SensorTypes.LIGHT_TIMER : ADCP.Commands.Query.TIMER,
-            SensorTypes.MODE_2D_3D : ADCP.Commands.Query.MODE_2D_3D, #returns 2d on newer 2d only models
-            SensorVideoSignalTypes.RESOLUTION : ADCP.Commands.Query.SIGNAL,
-            SensorVideoSignalTypes.DYNAMIC_RANGE : ADCP.Commands.Query.HDR_FORMAT,
-            SensorVideoSignalTypes.COLOR_FORMAT : ADCP.Commands.Query.COLOR_FORMAT,
-            SensorSystemStatusTypes.ERROR : ADCP.Commands.Query.ERROR,
-            SensorSystemStatusTypes.WARNING : ADCP.Commands.Query.WARNING,
+            enums.SensorTypes.POWER_STATUS : ADCP.Commands.Query.POWER_STATUS,
+            enums.SensorTypes.TEMPERATURE : ADCP.Commands.Query.TEMPERATURE,
+            enums.SensorTypes.LIGHT_TIMER : ADCP.Commands.Query.TIMER,
+            enums.SensorTypes.MODE_2D_3D : ADCP.Commands.Query.MODE_2D_3D, #returns 2d on newer 2d only models
+            enums.SensorVideoSignalTypes.RESOLUTION : ADCP.Commands.Query.SIGNAL,
+            enums.SensorVideoSignalTypes.DYNAMIC_RANGE : ADCP.Commands.Query.HDR_FORMAT,
+            enums.SensorVideoSignalTypes.COLOR_FORMAT : ADCP.Commands.Query.COLOR_FORMAT,
+            enums.SensorSystemStatusTypes.ERROR : ADCP.Commands.Query.ERROR,
+            enums.SensorSystemStatusTypes.WARNING : ADCP.Commands.Query.WARNING,
             #Select commands
-            SensorTypes.INPUT : ADCP.Commands.Select.INPUT,
-            SensorTypes.PICTURE_MUTING: ADCP.Commands.Select.MUTE,
-            SensorTypes.PICTURE_PRESET : ADCP.Commands.Select.PICTURE_MODE,
-            SensorTypes.ASPECT : ADCP.Commands.Select.ASPECT,
-            SensorTypes.MOTIONFLOW : ADCP.Commands.Select.MOTIONFLOW,
-            SensorTypes.INPUT_LAG_REDUCTION : ADCP.Commands.Select.INPUT_LAG_REDUCTION,
-            SensorTypes.MENU_POSITION : ADCP.Commands.Select.MENU_POSITION,
-            SensorTypes.COLOR_TEMPERATURE : ADCP.Commands.Select.COLOR_TEMPERATURE,
-            SensorTypes.COLOR_SPACE : ADCP.Commands.Select.COLOR_SPACE,
-            SensorTypes.GAMMA : ADCP.Commands.Select.GAMMA,
-            SensorTypes.CONTRAST_ENHANCER : ADCP.Commands.Select.CONTRAST_ENHANCER,
+            enums.SensorTypes.INPUT : ADCP.Commands.Select.INPUT,
+            enums.SensorTypes.PICTURE_MUTING: ADCP.Commands.Select.MUTE,
+            enums.SensorTypes.PICTURE_PRESET : ADCP.Commands.Select.PICTURE_MODE,
+            enums.SensorTypes.ASPECT : ADCP.Commands.Select.ASPECT,
+            enums.SensorTypes.MOTIONFLOW : ADCP.Commands.Select.MOTIONFLOW,
+            enums.SensorTypes.INPUT_LAG_REDUCTION : ADCP.Commands.Select.INPUT_LAG_REDUCTION,
+            enums.SensorTypes.MENU_POSITION : ADCP.Commands.Select.MENU_POSITION,
+            enums.SensorTypes.COLOR_TEMPERATURE : ADCP.Commands.Select.COLOR_TEMPERATURE,
+            enums.SensorTypes.COLOR_SPACE : ADCP.Commands.Select.COLOR_SPACE,
+            enums.SensorTypes.GAMMA : ADCP.Commands.Select.GAMMA,
+            enums.SensorTypes.CONTRAST_ENHANCER : ADCP.Commands.Select.CONTRAST_ENHANCER,
             #Lamp models
-            SensorTypes.LAMP_CONTROL: ADCP.Commands.Select.LAMP_CONTROL,
+            enums.SensorTypes.LAMP_CONTROL: ADCP.Commands.Select.LAMP_CONTROL,
                 #Iris only
-                SensorTypes.DYNAMIC_IRIS_CONTROL : ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL,
-                SensorTypes.IRIS_BRIGHTNESS : ADCP.Commands.Numeric.IRIS_BRIGHTNESS,
+                enums.SensorTypes.DYNAMIC_IRIS_CONTROL : ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL,
+                enums.SensorTypes.IRIS_BRIGHTNESS : ADCP.Commands.Numeric.IRIS_BRIGHTNESS,
             #Picture position models
-            SensorTypes.PICTURE_POSITION_SELECT: ADCP.Commands.Select.PICTURE_POSITION_SELECT,
+            enums.SensorTypes.PICTURE_POSITION: ADCP.Commands.Select.PICTURE_POSITION_SELECT,
             #3D models
-            SensorTypes.FORMAT_3D : ADCP.Commands.Select.MODE_3D_FORMAT,
+            enums.SensorTypes.FORMAT_3D : ADCP.Commands.Select.MODE_3D_FORMAT,
             #HDR models
-            SensorTypes.HDR_STATUS : ADCP.Commands.Select.HDR,
-            SensorTypes.HDR_DYNAMIC_TONE_MAPPING : ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING, #only models never than xw6100/xw8100
+            enums.SensorTypes.HDR_STATUS : ADCP.Commands.Select.HDR,
+            enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING : ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING, #only models never than xw6100/xw8100
             #Laser models
-            SensorTypes.LASER_BRIGHTNESS : ADCP.Commands.Numeric.LASER_BRIGHTNESS,
-            SensorTypes.DYNAMIC_LIGHT_CONTROL : ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL,
+            enums.SensorTypes.LASER_BRIGHTNESS : ADCP.Commands.Numeric.LASER_BRIGHTNESS,
+            enums.SensorTypes.DYNAMIC_LIGHT_CONTROL : ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL,
         #Select entity commands
-        SelectTypes.POWER : ADCP.Commands.Select.POWER,
-        SelectTypes.INPUT : ADCP.Commands.Select.INPUT,
-        SelectTypes.PICTURE_MUTING: ADCP.Commands.Select.MUTE,
-        SelectTypes.PICTURE_PRESET : ADCP.Commands.Select.PICTURE_MODE,
-        SelectTypes.ASPECT : ADCP.Commands.Select.ASPECT,
-        SelectTypes.MOTIONFLOW : ADCP.Commands.Select.MOTIONFLOW,
-        SelectTypes.INPUT_LAG_REDUCTION : ADCP.Commands.Select.INPUT_LAG_REDUCTION,
-        SelectTypes.MENU_POSITION : ADCP.Commands.Select.MENU_POSITION,
-        SelectTypes.COLOR_TEMPERATURE : ADCP.Commands.Select.COLOR_TEMPERATURE,
-        SelectTypes.COLOR_SPACE : ADCP.Commands.Select.COLOR_SPACE,
-        SelectTypes.GAMMA : ADCP.Commands.Select.GAMMA,
-        SelectTypes.CONTRAST_ENHANCER : ADCP.Commands.Select.CONTRAST_ENHANCER, #HDR: Dynamic HDR enhancer
+        enums.SelectTypes.POWER : ADCP.Commands.Select.POWER,
+        enums.SelectTypes.INPUT : ADCP.Commands.Select.INPUT,
+        enums.SelectTypes.PICTURE_MUTING: ADCP.Commands.Select.MUTE,
+        enums.SelectTypes.PICTURE_PRESET : ADCP.Commands.Select.PICTURE_MODE,
+        enums.SelectTypes.ASPECT : ADCP.Commands.Select.ASPECT,
+        enums.SelectTypes.MOTIONFLOW : ADCP.Commands.Select.MOTIONFLOW,
+        enums.SelectTypes.INPUT_LAG_REDUCTION : ADCP.Commands.Select.INPUT_LAG_REDUCTION,
+        enums.SelectTypes.MENU_POSITION : ADCP.Commands.Select.MENU_POSITION,
+        enums.SelectTypes.COLOR_TEMPERATURE : ADCP.Commands.Select.COLOR_TEMPERATURE,
+        enums.SelectTypes.COLOR_SPACE : ADCP.Commands.Select.COLOR_SPACE,
+        enums.SelectTypes.GAMMA : ADCP.Commands.Select.GAMMA,
+        enums.SelectTypes.CONTRAST_ENHANCER : ADCP.Commands.Select.CONTRAST_ENHANCER, #HDR: Dynamic HDR enhancer
         #Lamp models
-        SelectTypes.LAMP_CONTROL: ADCP.Commands.Select.LAMP_CONTROL,
-        SelectTypes.DYNAMIC_IRIS_CONTROL : ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL,
+        enums.SelectTypes.LAMP_CONTROL: ADCP.Commands.Select.LAMP_CONTROL,
+        enums.SelectTypes.DYNAMIC_IRIS_CONTROL : ADCP.Commands.Select.DYNAMIC_IRIS_CONTROL,
         #Picture position models
-        SelectTypes.PICTURE_POSITION_SELECT: ADCP.Commands.Select.PICTURE_POSITION_SELECT,
-        SelectTypes.PICTURE_POSITION_SAVE : ADCP.Commands.Execute.PICTURE_POSITION_SAVE, #No range possible, use select command
+        enums.SelectTypes.PICTURE_POSITION_SELECT: ADCP.Commands.Select.PICTURE_POSITION_SELECT,
+        enums.SelectTypes.PICTURE_POSITION_SAVE : ADCP.Commands.Execute.PICTURE_POSITION_SAVE, #No range possible, use select command
         #3D models
-        SelectTypes.FORMAT_3D : ADCP.Commands.Select.MODE_3D_FORMAT,
+        enums.SelectTypes.FORMAT_3D : ADCP.Commands.Select.MODE_3D_FORMAT,
         #HDR models
-        SelectTypes.HDR_FORMAT : ADCP.Commands.Select.HDR,
-        SelectTypes.HDR_DYNAMIC_TONE_MAPPING : ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING, #only models never than xw6100/xw8100
+        enums.SelectTypes.HDR_FORMAT : ADCP.Commands.Select.HDR,
+        enums.SelectTypes.HDR_DYNAMIC_TONE_MAPPING : ADCP.Commands.Select.HDR_DYNAMIC_TONE_MAPPING, #only models never than xw6100/xw8100
         #Laser models
-        SelectTypes.DYNAMIC_LIGHT_CONTROL : ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL
+        enums.SelectTypes.DYNAMIC_LIGHT_CONTROL : ADCP.Commands.Select.DYNAMIC_LIGHT_CONTROL
     }
 
     @staticmethod
@@ -461,10 +266,10 @@ class EntityDefinitions:
             ucapi.media_player.Attributes.STATE: ucapi.media_player.States.UNKNOWN,
             ucapi.media_player.Attributes.MUTED: False,
             ucapi.media_player.Attributes.SOURCE: "",
-            ucapi.media_player.Attributes.SOURCE_LIST: list(Sources)
+            ucapi.media_player.Attributes.SOURCE_LIST: list(enums.Sources)
             }
         _options = {
-            ucapi.media_player.Options.SIMPLE_COMMANDS: list(SimpleCommands)
+            ucapi.media_player.Options.SIMPLE_COMMANDS: list(enums.SimpleCommands)
             }
 
         def get_def(self, ent_id: str, name: str):
@@ -477,6 +282,13 @@ class EntityDefinitions:
                 attributes=EntityDefinitions.MediaPlayer._attributes,
                 device_class=EntityDefinitions.MediaPlayer._device_class,
                 options=EntityDefinitions.MediaPlayer._options,
+                icon="uc:projector",
+                description={
+                    "en": f"Media player entity of the {name} projector. \
+Supports attributes and commands for power, video mute and input as well as additional simple commands for various settings.",
+                    "de": f"Media Player Entität des {name} Projektors. \
+Unterstützt Attribute und Befehle für das Ein & Ausschalten von Projektor und Videobild, das Ändern des Eingangs \
+sowie zusätzliche einfache Befehle für verschiedene Einstellungen."},
                 cmd_handler=media_player.cmd_handler
                 )
 
@@ -492,10 +304,13 @@ class EntityDefinitions:
         _attributes = {
             ucapi.remote.Attributes.STATE: ucapi.remote.States.UNKNOWN
             }
-        _simple_commands = [cmd for cmd in SimpleCommands]
+        _simple_commands = [cmd for cmd in enums.SimpleCommands]
 
         def get_def(self, ent_id: str, name: str):
             """Returns the remote entity definition for the api call"""
+
+            device_id = ent_id.replace("remote-", "")
+            display_name = Devices.get(device_id=device_id, key=DevicesKeys.NAME)
 
             definition = ucapi.Remote(
                 ent_id,
@@ -505,6 +320,11 @@ class EntityDefinitions:
                 simple_commands=EntityDefinitions.Remote._simple_commands,
                 button_mapping=remote.create_button_mappings(),
                 ui_pages=remote.create_ui_pages(),
+                description={
+                    "en": f"Remote entity of the {display_name} projector. \
+Supports additional simple commands for various settings and sending native ADCP commands via the \"send command\" command.",
+                    "de": f"Fernbedienung-Entität des {display_name} Projektors. \
+Unterstützt zusätzliche einfache Befehle für verschiedene Einstellungen und das Senden nativer ADCP-Befehle über den \"Kommando senden\"-Befehl."},
                 cmd_handler=remote.cmd_handler,
             )
 
@@ -960,7 +780,7 @@ class Devices:
             Devices.__devices = []
             Devices.__runtime_entity_data = {}
 
-    @staticmethod #TODO Localize entity names
+    @staticmethod
     def _generate_entity_data(device_id: str):
         """
         Generate entity IDs and names for all entities of a device and store them in runtime storage.
@@ -979,73 +799,35 @@ class Devices:
             _LOG.debug(f"Skipping entity data generation for device {device_id}: device name not yet available")
             return
 
-        sensor_types = SensorTypes.get_all()
-        select_types = SelectTypes.get_all()
-
         # Generate remote entity data
         remote_entity_id = "remote-" + device_id
         remote_entity_name = {
-            "en": name + " Remote",
-            "de": name + " Remote",
-        }
-
-        # Generate sensor entity data
-        sensor_light_entity_id = "sensor-light-" + device_id
-        sensor_light_entity_name = {
-            "en": "Light source timer " + name,
-            "de": "Lichtquellen-Timer " + name
-        }
-
-        sensor_video_entity_id = "sensor-video-" + device_id
-        sensor_video_entity_name = {
-            "en": "Video signal " + name,
-            "de": "Video-Signal " + name
-        }
-
-        sensor_temp_entity_id = "sensor-temp-" + device_id
-        sensor_temp_entity_name = {
-            "en": "Temperature " + name,
-            "de": "Temperatur " + name
-        }
-
-        sensor_system_entity_id = "sensor-system-" + device_id
-        sensor_system_entity_name = {
-            "en": "System status " + name,
-            "de": "System-Status " + name
+            "en": f"{name} {i18n.Handler.localize(enums.Messages.REMOTE, force_language=enums.Languages.ENGLISH)}",
+            "de": f"{name} {i18n.Handler.localize(enums.Messages.REMOTE, force_language=enums.Languages.GERMAN)}",
         }
 
         # Store generated data in runtime
         Devices.__runtime_entity_data.update({
             f"{device_id}#remote-id": remote_entity_id,
             f"{device_id}#remote-name": remote_entity_name,
-            f"{device_id}#sensor-light-id": sensor_light_entity_id,
-            f"{device_id}#sensor-light-name": sensor_light_entity_name,
-            f"{device_id}#sensor-video-id": sensor_video_entity_id,
-            f"{device_id}#sensor-video-name": sensor_video_entity_name,
-            f"{device_id}#sensor-temp-id": sensor_temp_entity_id,
-            f"{device_id}#sensor-temp-name": sensor_temp_entity_name,
-            f"{device_id}#sensor-system-id": sensor_system_entity_id,
-            f"{device_id}#sensor-system-name": sensor_system_entity_name,
         })
+
+        sensor_types = enums.SensorTypes.get_all()
+        select_types = enums.SelectTypes.get_all()
 
         # Generate additional sensor entity data
         for sensor in sensor_types:
-            if sensor not in (SensorTypes.TEMPERATURE, SensorTypes.LIGHT_TIMER, SensorTypes.VIDEO_SIGNAL, SensorTypes.SYSTEM_STATUS):
-                if sensor == SensorTypes.CONTRAST_ENHANCER:
-                    sensor_name = "Contrast/Dynamic HDR Enhancer"
-                else:
-                    sensor_name = sensor.replace("-", " ").title().replace("Hdr", "HDR").replace("2d/3d", "2D/3D").replace("3d", "3D")
-                Devices.__runtime_entity_data[f"{device_id}#sensor-{sensor}-id"] = f"sensor-{sensor}-{device_id}"
-                Devices.__runtime_entity_data[f"{device_id}#sensor-{sensor}-name"] = f"{sensor_name} {name}"
+            sensor_name_en = i18n.Handler.localize(sensor, force_language=enums.Languages.ENGLISH)
+            sensor_name_de = i18n.Handler.localize(sensor, force_language=enums.Languages.GERMAN)
+            Devices.__runtime_entity_data[f"{device_id}#sensor-{sensor}-id"] = f"sensor-{sensor}-{device_id}"
+            Devices.__runtime_entity_data[f"{device_id}#sensor-{sensor}-name"] = {"en": f"{sensor_name_en} {name}", "de": f"{sensor_name_de} {name}"}
 
         # Generate select entity data
         for select in select_types:
-            if select == SensorTypes.CONTRAST_ENHANCER:
-                select_name = "Contrast/Dynamic HDR Enhancer"
-            else:
-                select_name = select.replace("-", " ").title().replace("Hdr", "HDR").replace("2d/3d", "2D/3D").replace("3d", "3D")
+            select_name_en = i18n.Handler.localize(select, force_language=enums.Languages.ENGLISH)
+            select_name_de = i18n.Handler.localize(select, force_language=enums.Languages.GERMAN)
             Devices.__runtime_entity_data[f"{device_id}#select-{select}-id"] = f"select-{select}-{device_id}"
-            Devices.__runtime_entity_data[f"{device_id}#select-{select}-name"] = f"{select_name} {name}"
+            Devices.__runtime_entity_data[f"{device_id}#select-{select}-name"] = {"en": f"{select_name_en} {name}", "de": f"{select_name_de} {name}"}
 
         _LOG.debug(f"Generated entity data for device {device_id}")
 
@@ -1068,103 +850,109 @@ DevicesKeys = Devices.Keys
 
 
 
-_SPECIAL_CASES = {
-    "1.85_1": "1.85:1",
-    "2.35_1": "2.35:1",
-    "sim3d": "Simulated 3D",
-    "sidebyside": "Side by Side",
-    "overunder": "Over Under",
-    "v_stretch": "V-Stretch",
-    "ycbcr420": "YCbCr 4:2:0",
-    "ycbcr422": "YCbCr 4:2:2",
-    "ycbcr444": "YCbCr 4:4:4",
-    "warn_light_src_life": "Light-Source Error",
-    "warn_highland": "High Altitude Warning",
-    "warn_temp": "Temperature Warning",
-    "warn_signal_freq": "Signal Frequency Warning",
-    "warn_signal_sel": "Signal Selection Warning",
-    "err_power": "Main Power Supply Error",
-    "err_power2": "DC Power Supply or NAND Error",
-    "err_system3": "System Error 3 (MAIN_STARTUP)",
-    "err_system4": "System Error 4 (WDT)",
-    "err_system5": "System Error 5 (BE_STARTUP)",
-    "err_cover": "Cover Error",
-    "err_light_src": "Light-source Error",
-    "err_lens_cover": "Top Cover Or Lens Shutter Error",
-    "err_shock": "Drop Shock Error",
-    "err_nolens": "Lens Not Attached Error",
-    "err_attitude": "Installation Angle Error",
-    "err_temp": "Temperature Error",
-    "err_fan": "Fan Error",
-    "err_wheel": "Wheel Error",
-    "err_light_over": "Luminance Error",
-    "err_assy": "ASSY Error",
-    "err_ballast_update": "Ballast Updating Error"
-}
+# _SPECIAL_CASES = {
+#     "1.85_1": "1.85:1",
+#     "2.35_1": "2.35:1",
+#     "sim3d": "Simulated 3D",
+#     "sidebyside": "Side by Side",
+#     "overunder": "Over Under",
+#     "v_stretch": "V-Stretch",
+#     "ycbcr420": "YCbCr 4:2:0",
+#     "ycbcr422": "YCbCr 4:2:2",
+#     "ycbcr444": "YCbCr 4:4:4",
+#     "warn_light_src_life": "Light-Source Error",
+#     "warn_highland": "High Altitude Warning",
+#     "warn_temp": "Temperature Warning",
+#     "warn_signal_freq": "Signal Frequency Warning",
+#     "warn_signal_sel": "Signal Selection Warning",
+#     "err_power": "Main Power Supply Error",
+#     "err_power2": "DC Power Supply or NAND Error",
+#     "err_system3": "System Error 3 (MAIN_STARTUP)",
+#     "err_system4": "System Error 4 (WDT)",
+#     "err_system5": "System Error 5 (BE_STARTUP)",
+#     "err_cover": "Cover Error",
+#     "err_light_src": "Light-source Error",
+#     "err_lens_cover": "Top Cover Or Lens Shutter Error",
+#     "err_shock": "Drop Shock Error",
+#     "err_nolens": "Lens Not Attached Error",
+#     "err_attitude": "Installation Angle Error",
+#     "err_temp": "Temperature Error",
+#     "err_fan": "Fan Error",
+#     "err_wheel": "Wheel Error",
+#     "err_light_over": "Luminance Error",
+#     "err_assy": "ASSY Error",
+#     "err_ballast_update": "Ballast Updating Error"
+# }
 
-_REVERSE_SPECIAL_CASES = {v: k for k, v in _SPECIAL_CASES.items()}
+# _REVERSE_SPECIAL_CASES = {v: k for k, v in _SPECIAL_CASES.items()}
 
-def convert_options(option: str | list[str], device_id: str = None, reverse: bool = False) -> str | list[str]:
-    """Prettify or reconvert sensor value attributes and select option attributes back to raw ADCP command values. Works with single strings and lists"""
+# def convert_options(option: str | list[str], device_id: str = None, reverse: bool = False) -> str | list[str]:
+#     """Prettify or reconvert sensor value attributes and select option attributes back to raw ADCP command values. Works with single strings and lists"""
 
-    picture_positions_mapping = {}
-    if device_id:
-        picture_positions_mapping = Devices.get(device_id, DevicesKeys.PICTURE_POSITIONS_MAPPING)
+#     picture_positions_mapping = {}
+#     if device_id:
+#         picture_positions_mapping = Devices.get(device_id, DevicesKeys.PICTURE_POSITIONS_MAPPING)
 
-    if isinstance(option, list):
-        return [convert_options(item, reverse=reverse, device_id=device_id) for item in option]
+#     if isinstance(option, list):
+#         return [convert_options(item, reverse=reverse, device_id=device_id) for item in option]
 
-    if not reverse:
-        if picture_positions_mapping:
-            if option in picture_positions_mapping:
-                if picture_positions_mapping[option] is not "":
-                    return picture_positions_mapping[option]
+#     if isinstance(option, str) and "/" in option and not reverse:
+#         return " / ".join(
+#             convert_options(part.strip(), device_id, reverse=reverse)
+#             for part in option.split("/")
+#         )
 
-        if option in _SPECIAL_CASES:
-            return _SPECIAL_CASES[option]
+#     if not reverse:
+#         if picture_positions_mapping:
+#             if option in picture_positions_mapping:
+#                 if picture_positions_mapping[option] != "":
+#                     return picture_positions_mapping[option]
 
-        #Check for partial matches and replace them
-        result = option
-        for key, value in _SPECIAL_CASES.items():
-            result = result.replace(key, value)
+#         if option in _SPECIAL_CASES:
+#             return _SPECIAL_CASES[option]
 
-        def _is_numeric(val) -> bool:
-            if isinstance(val, (int, float)):
-                return True
-            if isinstance(val, str):
-                try:
-                    float(val)
-                    return True
-                except ValueError:
-                    return False
-            return False
+#         #Check for partial matches and replace them
+#         result = option
+#         for key, value in _SPECIAL_CASES.items():
+#             result = result.replace(key, value)
 
-        if option == result and not _is_numeric(option):
-            pretty = option.replace("_", " ").replace("/", " / ").replace("brt", "bright").replace("warn", "warning").replace("err", "error").title()
-            #Capitalize common abbreviations
-            pretty = pretty.replace("Hdmi", "HDMI").replace("Tv", "TV")\
-            .replace("Hdr", "HDR").replace("Sdr", "SDR").replace("Hlg", "HLG")\
-            .replace("Bt", "BT.").replace("Rgb", "RGB").replace("Dci", "DCI")
-            #Add space before the last digit for options with a single digit at the end
-            if len(pretty) >= 2 and pretty[-1].isdigit() and not pretty[-2].isdigit():
-                pretty = pretty[:-1] + " " + pretty[-1]
-            return pretty
+#         def _is_numeric(val) -> bool:
+#             if isinstance(val, (int, float)):
+#                 return True
+#             if isinstance(val, str):
+#                 try:
+#                     float(val)
+#                     return True
+#                 except ValueError:
+#                     return False
+#             return False
 
-        return result
+#         if option == result and not _is_numeric(option):
+#             pretty = option.replace("_", " ").replace("/", " / ").replace("brt", "bright").replace("warn", "warning").replace("err", "error").title()
+#             #Capitalize common abbreviations
+#             pretty = pretty.replace("Hdmi", "HDMI").replace("Tv", "TV")\
+#             .replace("Hdr", "HDR").replace("Sdr", "SDR").replace("Hlg", "HLG")\
+#             .replace("Bt", "BT.").replace("Rgb", "RGB").replace("Dci", "DCI")
+#             #Add space before the last digit for options with a single digit at the end
+#             if len(pretty) >= 2 and pretty[-1].isdigit() and not pretty[-2].isdigit():
+#                 pretty = pretty[:-1] + " " + pretty[-1]
+#             return pretty
 
-    reverse_picture_positions_mapping = {v: k for k, v in picture_positions_mapping.items()}
-    if option in reverse_picture_positions_mapping:
-        return f"\"{reverse_picture_positions_mapping[option]}\""
+#         return result
 
-    if option in _REVERSE_SPECIAL_CASES:
-        if picture_positions_mapping[option] is not "":
-            return f"\"{_REVERSE_SPECIAL_CASES[option]}\""
+#     reverse_picture_positions_mapping = {v: k for k, v in picture_positions_mapping.items()}
+#     if option in reverse_picture_positions_mapping:
+#         return f"\"{reverse_picture_positions_mapping[option]}\""
 
-    raw = option.lower().replace(" ", "_").replace("bright", "brt").replace("bt", "bt.").replace("HDMI ", "hdmi")
+#     if option in _REVERSE_SPECIAL_CASES:
+#         if picture_positions_mapping[option] != "":
+#             return f"\"{_REVERSE_SPECIAL_CASES[option]}\""
 
-    if len(raw) >= 3 and raw[-2] == "_" and raw[-1].isdigit():
-        raw = raw[:-2] + raw[-1]
+#     raw = option.lower().replace(" ", "_").replace("bright", "brt").replace("bt", "bt.").replace("HDMI ", "hdmi")
 
-    raw = f"\"{raw}\""
+#     if len(raw) >= 3 and raw[-2] == "_" and raw[-1].isdigit():
+#         raw = raw[:-2] + raw[-1]
 
-    return raw
+#     raw = f"\"{raw}\""
+
+#     return raw

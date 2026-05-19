@@ -15,12 +15,16 @@ import media_player
 import remote
 import sensor
 import selects
+import i18n
+import enums
 
 
 _LOG = logging.getLogger("driver")  # avoid having __main__ in log messages
 
 loop = asyncio.get_event_loop()
 api = ucapi.IntegrationAPI(loop)
+
+_LANGUAGE_INITIALIZED = False
 
 
 async def add_available_entities():
@@ -46,7 +50,7 @@ async def add_available_entities():
         else:
             await remote.add(device_id)
 
-        for sensor_type in config.SensorTypes.get_all():
+        for sensor_type in enums.SensorTypes.get_all():
             try:
                 sensor_entity_id = config.Devices.get(device_id=device_id, key=f"sensor-{sensor_type}-id")
             except ValueError as v:
@@ -58,7 +62,7 @@ async def add_available_entities():
             else:
                 await sensor.add(device_id, sensor_type)
 
-        for select_type in config.SelectTypes.get_all():
+        for select_type in enums.SelectTypes.get_all():
             await selects.add(device_id, select_type)
 
 
@@ -90,12 +94,31 @@ async def on_intg_disconnect() -> None:
 
 
 @api.listens_to(ucapi.Events.CLIENT_CONNECTED)
-async def on_client_connect() -> None:
+async def on_client_connect(websocket) -> None:
     """
     Websocket client connect notification from Remote.
     """
     _LOG.debug("Remote websocket client connected to this integration websockets server")
     _LOG.debug("There are currently %d websocket clients connected to this integration websockets server", int(api.client_count))
+
+    # Set the language for messages only once
+    global _LANGUAGE_INITIALIZED
+    if not _LANGUAGE_INITIALIZED:
+        try:
+            resp = await api.get_localization_cfg(websocket)
+            language_code = resp.get("language_code") if resp else enums.Languages.ENGLISH.value
+            if language_code not in enums.Languages.get_values():
+                _LOG.info(f"No translations available for language \"{language_code}\". Using default language \"{enums.Languages.ENGLISH.value}\"")
+                language_code = enums.Languages.ENGLISH.value
+            i18n.Handler.set_language(language_code)
+            _LOG.info(f"Integration language set to {language_code}")
+            _LANGUAGE_INITIALIZED = True
+        except ConnectionError:
+            # WebSocket disconnected is expected when client disconnects during request
+            _LANGUAGE_INITIALIZED = True
+        except Exception as e:
+            _LOG.warning(f"Could not retrieve language configuration: {e}. Using default language \"{enums.Languages.ENGLISH.value}\"")
+            _LANGUAGE_INITIALIZED = True
 
 
 
@@ -148,8 +171,6 @@ async def on_subscribe_entities(entity_ids: list[str]) -> None:
     """
     _LOG.info("Received subscribe entities event for entity ids: " + str(entity_ids))
 
-    config.Setup.set(config.Setup.Keys.STANDBY, False)
-
     if config.Setup.get(config.Setup.Keys.SETUP_COMPLETE):
         device_ids = []
 
@@ -172,10 +193,10 @@ async def on_subscribe_entities(entity_ids: list[str]) -> None:
 
                     media_player_id = config.Devices.get(device_id=device_id, key=config.DevicesKeys.DEVICE_ID)
                     remote_id = config.Devices.get(device_id=device_id, key="remote-id")
-                    sensor_video_id = config.Devices.get(device_id=device_id, key=f"sensor-{config.SensorTypes.VIDEO_SIGNAL}-id")
-                    sensor_system_id = config.Devices.get(device_id=device_id, key=f"sensor-{config.SensorTypes.SYSTEM_STATUS}-id")
-                    sensor_light_id = config.Devices.get(device_id=device_id, key=f"sensor-{config.SensorTypes.LIGHT_TIMER}-id")
-                    sensor_temp_id = config.Devices.get(device_id=device_id, key=f"sensor-{config.SensorTypes.TEMPERATURE}-id")
+                    sensor_video_id = config.Devices.get(device_id=device_id, key=f"sensor-{enums.SensorTypes.VIDEO_SIGNAL}-id")
+                    sensor_system_id = config.Devices.get(device_id=device_id, key=f"sensor-{enums.SensorTypes.SYSTEM_STATUS}-id")
+                    sensor_light_id = config.Devices.get(device_id=device_id, key=f"sensor-{enums.SensorTypes.LIGHT_TIMER}-id")
+                    sensor_temp_id = config.Devices.get(device_id=device_id, key=f"sensor-{enums.SensorTypes.TEMPERATURE}-id")
 
                     if media_player_id in entity_ids:
                         await media_player.update_attributes(device_id)
@@ -193,14 +214,14 @@ async def on_subscribe_entities(entity_ids: list[str]) -> None:
                     if any(entity_id in (sensor_light_id, sensor_temp_id, sensor_system_id) for entity_id in entity_ids):
                         await sensor.HealthPollerController.start(device_id)
 
-                    for sensor_type in config.SensorTypes.get_all():
-                        if sensor_type not in (config.SensorTypes.VIDEO_SIGNAL, config.SensorTypes.SYSTEM_STATUS):
+                    for sensor_type in enums.SensorTypes.get_all():
+                        if sensor_type not in (enums.SensorTypes.VIDEO_SIGNAL, enums.SensorTypes.SYSTEM_STATUS):
                             sensor_id = config.Devices.get(device_id=device_id, key=f"sensor-{sensor_type}-id")
                             if sensor_id in entity_ids:
                                 await sensor.update_setting(device_id, sensor_type)
                                 await asyncio.sleep(0.3) #WORKAROUND for random unavailable entities
 
-                    for select_type in config.SelectTypes.get_all():
+                    for select_type in enums.SelectTypes.get_all():
                         select_id = config.Devices.get(device_id=device_id, key=f"select-{select_type}-id")
                         if select_id in entity_ids:
                             await selects.update_attributes(device_id, select_type)
@@ -213,9 +234,6 @@ async def on_subscribe_entities(entity_ids: list[str]) -> None:
 
 
 
-#BUG #WAIT No event when removing an entity as configured entity. Could be a UC Python library or core/web configurator bug.
-# https://github.com/unfoldedcircle/integration-python-library/issues/25
-# Therefore poller tasks will also be running for entities that have been removed as configured entities
 @api.listens_to(ucapi.Events.UNSUBSCRIBE_ENTITIES)
 async def on_unsubscribe_entities(entity_ids: list[str]) -> None:
     """
@@ -224,8 +242,6 @@ async def on_unsubscribe_entities(entity_ids: list[str]) -> None:
     Just show a debug log message as there is no permanent connection to the projector or clients that needs to be closed or removed.
     """
     _LOG.info("Received unsubscribe entities event for entity ids: " + str(entity_ids))
-
-    config.Setup.set(config.Setup.Keys.STANDBY, False)
 
     device_ids = []
 
@@ -240,40 +256,45 @@ async def on_unsubscribe_entities(entity_ids: list[str]) -> None:
                 device_ids.append(extracted_device_id)
 
     if not device_ids:
-        _LOG.info("No valid device ids found in entity ids list from entity subscribe message")
+        _LOG.info("No valid device ids found in entity ids list from entity unsubscribe message")
 
     else:
         for device_id in device_ids:
 
+            mp_entity_id = config.Devices.get(device_id=device_id, key=config.DevicesKeys.DEVICE_ID)
+            rt_entity_id = config.Devices.get(device_id=device_id, key="remote-id")
+
             for entity_id in entity_ids:
-                mp_entity_id= config.Devices.get(device_id=entity_id, key=config.DevicesKeys.DEVICE_ID)
-                rt_entity_id = config.Devices.get(device_id=entity_id, key="remote-id")
-                device_id = mp_entity_id
+                if entity_id == mp_entity_id:
+                    await media_player.MpPollerController.stop(device_id=device_id)
+                    await media_player.remove(device_id=device_id)
+                    continue
 
-                if mp_entity_id in entity_ids:
-                    await media_player.MpPollerController.stop(device_id=entity_id)
-                    await media_player.remove(device_id=entity_id)
+                if entity_id == rt_entity_id:
+                    await remote.remove(device_id=device_id)
+                    continue
 
-                if rt_entity_id in entity_ids:
-                    await remote.remove(device_id=entity_id)
+                for sensor_type in enums.SensorTypes.get_all():
+                    sensor_id = config.Devices.get(device_id=device_id, key=f"sensor-{sensor_type}-id")
+                    if sensor_id == entity_id:
+                        await sensor.remove(device_id=device_id, sensor_type=sensor_type)
+                        break
 
-                removed_sensor_ids = []
-                for sensor_type in config.SensorTypes.get_all():
-                    sensor_id = config.Devices.get(device_id=entity_id, key=f"sensor-{sensor_type}-{device_id}")
-                    if sensor_id in entity_ids:
-                        removed_sensor_ids.append(sensor_id)
-                        await sensor.remove(device_id=entity_id, sensor_type=sensor_type)
+                for select_type in enums.SelectTypes.get_all():
+                    select_id = config.Devices.get(device_id=device_id, key=f"select-{select_type}-id")
+                    if select_id == entity_id:
+                        await selects.remove(device_id=device_id, select_type=select_type)
+                        break
 
-                for removed_sensor_id in removed_sensor_ids:
-                    if removed_sensor_id in entity_ids:
-                        await sensor.HealthPollerController.stop(device_id=entity_id)
+            health_sensor_entity_ids = []
+            for sensor_type in enums.SensorHealthPollerTypes.get_all():
+                sensor_id = config.Devices.get(device_id=device_id, key=f"sensor-{sensor_type}-id")
+                if sensor_id:
+                    health_sensor_entity_ids.append(sensor_id)
 
-                removed_select_ids = []
-                for select_type in config.SelectTypes.get_all():
-                    select_id = config.Devices.get(device_id=entity_id, key=f"select-{select_type}-{device_id}")
-                    if select_id in entity_ids:
-                        removed_select_ids.append(select_id)
-                        await selects.remove(device_id=entity_id, select_type=select_type)
+            if health_sensor_entity_ids and not any(api.configured_entities.contains(entity) for entity in health_sensor_entity_ids):
+                _LOG.info("All sensors that are updated by the health poller have been removed as configured entities")
+                await sensor.HealthPollerController.stop(device_id=device_id)
 
 
 
@@ -294,6 +315,7 @@ def setup_logger():
     logging.getLogger("remote").setLevel(level)
     logging.getLogger("sensor").setLevel(level)
     logging.getLogger("selects").setLevel(level)
+    logging.getLogger("i18n").setLevel(level)
 
 
 

@@ -16,6 +16,7 @@ import remote
 import sensor
 import selects
 import adcp as ADCP
+import enums
 
 _LOG = logging.getLogger(__name__)
 
@@ -198,6 +199,8 @@ async def show_setup_basic(device_id = None) -> ucapi.SetupAction:
     # https://github.com/FYTA-GmbH/uc-integration-fyta/blob/31e27e660d56243c4fe6158220f036a2cdb3f340/driver.py#L199
     # https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/unfoldedcircle/core-api/main/integration-api/UCR-integration-asyncapi.yaml#schema-SettingTypeText
     # Missing masking also mentioned in https://github.com/unfoldedcircle/feature-and-bug-tracker/issues/455
+
+    #TODO #WAIT Remove workaround when masking is working if a field just contains a mask-keyword and doesn't has to exactly match the keyword
     return ucapi.RequestUserInput(
             {
                 "en": "Basic Setup",
@@ -231,7 +234,7 @@ async def show_setup_basic(device_id = None) -> ucapi.SetupAction:
                             }
                 },
                 {
-                    "id": "adcp_password",
+                    "id": "password",
                     "label": {
                             "en": "ADCP / WebUI password (only required if ADCP authentication is turned on):",
                             "de": "ADCP / WebUI-Passwort (nur erforderlich bei aktivierter ADCP-Authentifizierung):"
@@ -277,8 +280,10 @@ async def handle_response_basic(msg: ucapi.UserDataResponse) -> ucapi.SetupActio
     :return: the setup action on how to continue: SetupComplete if finished.
     """
 
-    ip = msg.input_values["ip"]
-    adcp_password = msg.input_values[config.DevicesKeys.ADCP_PASSWORD]
+    ip = msg.input_values[config.DevicesKeys.IP]
+    #TODO #WAIT Remove workaround when masking is working if a field just contains a mask-keyword and doesn't has to exactly match the keyword
+    adcp_password = msg.input_values["password"]
+    #adcp_password = msg.input_values[config.DevicesKeys.ADCP_PASSWORD]
     advanced_settings = msg.input_values["advanced_settings"]
 
     if ip != "":
@@ -414,7 +419,8 @@ async def show_setup_advanced():
             {
                 "id": "picture_positions_mapping_1",
                 "label": {
-                        "en": "Custom 1"
+                        "en": "Custom 1",
+                        "de": "Benutzerdefiniert 1"
                         },
                 "field": {"text": {
                                 "value": picture_positions_mapping["custom1"]
@@ -424,7 +430,8 @@ async def show_setup_advanced():
             {
                 "id": "picture_positions_mapping_2",
                 "label": {
-                        "en": "Custom 2"
+                        "en": "Custom 2",
+                        "de": "Benutzerdefiniert 2"
                         },
                 "field": {"text": {
                                 "value": picture_positions_mapping["custom2"]
@@ -434,7 +441,8 @@ async def show_setup_advanced():
             {
                 "id": "picture_positions_mapping_3",
                 "label": {
-                        "en": "Custom 3"
+                        "en": "Custom 3",
+                        "de": "Benutzerdefiniert 3"
                         },
                 "field": {"text": {
                                 "value": picture_positions_mapping["custom2"]
@@ -444,7 +452,8 @@ async def show_setup_advanced():
             {
                 "id": "picture_positions_mapping_4",
                 "label": {
-                        "en": "Custom 4"
+                        "en": "Custom 4",
+                        "de": "Benutzerdefiniert 4"
                         },
                 "field": {"text": {
                                 "value": picture_positions_mapping["custom4"]
@@ -454,7 +463,8 @@ async def show_setup_advanced():
             {
                 "id": "picture_positions_mapping_5",
                 "label": {
-                        "en": "Custom 5"
+                        "en": "Custom 5",
+                        "de": "Benutzerdefiniert 5"
                         },
                 "field": {"text": {
                                 "value": picture_positions_mapping["custom5"]
@@ -753,7 +763,7 @@ async def validate_entity_data(model:str = None, serial:str = None):
     #Check if ADCP password is correct with a test command
     _LOG.info("Sending ADCP test command")
     try:
-        await projector.get_setting(device_id, config.SensorTypes.LIGHT_TIMER)
+        await projector.get_setting(device_id, enums.SensorTypes.LIGHT_TIMER)
     except OSError as e:
         _LOG.critical(e)
         _LOG.info("This usually happens when the hostname of the device running the integration has changed which is used to decrypt the password")
@@ -823,10 +833,10 @@ async def complete_setup(device_id:str = None, skip_entities:bool = False) -> uc
 
         await remote.add(device_id)
 
-        for sensor_type in config.SensorTypes.get_all():
+        for sensor_type in enums.SensorTypes.get_all():
             await sensor.add(device_id, sensor_type)
 
-        for select_type in config.SelectTypes.get_all():
+        for select_type in enums.SelectTypes.get_all():
             await selects.add(device_id, select_type)
 
     if config.Setup.get(config.Setup.Keys.SETUP_RECONFIGURE) is True:

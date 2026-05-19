@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-19
+
+_🎉 With firmware 2.9.3 or newer you can now finally update all custom integrations through the web configurator without having to delete the integration first and re-adding all entities on your profile pages. See [Updating](/README.md#updating)._
+
+### Added
+
+- Added a German translation for all entity names, sensor values, select options and status messages (e.g. Polling Temporarily Unavailable, No Signal etc.)
+  - Already configured entities need to be removed and added again as configured entities to show the translated names
+  - After changing the language on the remote the integration needs to be re-connected or the integration/remote needs to be restarted to be able to use the new language
+- Some sensor and select entity names and options have been renamed to match the actual setting name used in the projector menu. Simple command names have not been changed to not break existing setups
+- Added a default custom icon and description to the media player entity and a description for the remote entity
+- Automatically stop the power/mute/input or health poller if all entities that can be updated by a poller have been removed from the configured entities list
+  - This needs firmware 2.9.2 or newer
+
+### Fixed
+
+- Fixed system status sensor not updating when using the update all sensors function
+- Fixed picture position sensor not updating when using the picture position select entity
+
+### Changed
+
+- The unencrypted ADCP password is now shown as `***REDACTED***` in logs thanks to the updated ucapi library
+- Updated ucapi Python library to 0.7.0
+- Updated pyinstaller image to 0.6.0
+
 ## [1.5.1] - 2026-03-09
 
 ### Added
@@ -33,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ⚠️ Breaking
 
-- This update requires firmware 2.8.3 or newer. Otherwise a timeout occures when opening the available entities list. This issue will be fixed with the next ucapi library update
+- This update requires firmware 2.8.3 or newer. Otherwise a timeout occurs when opening the available entities list. This issue will be fixed with the next ucapi library update
 - Removed video signal infos from media player playback attributes as sensors can be added as widgets to activities since firmware 2.7.2. Please use the video sensor instead
 - If you are running the integration externally (e.g. Docker) you need to delete config.json and run the setup again
   - Don't panic: No entity ids have been changed!

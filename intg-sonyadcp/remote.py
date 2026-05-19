@@ -13,6 +13,7 @@ import ucapi.ui
 import driver
 import config
 import projector
+import enums
 
 _LOG = logging.getLogger(__name__)
 
@@ -33,16 +34,14 @@ async def add(device_id: str):
 
 
 async def remove(device_id: str):
-    """Function to remove a remote entity"""
+    """Function to remove a remote entity from the configured entities list"""
 
     rt_name = config.Devices.get(device_id=device_id, key="remote-name")
     rt_id = config.Devices.get(device_id=device_id, key="remote-id")
 
-    definition = config.EntityDefinitions.Remote().get_def(ent_id=rt_id, name=rt_name)
+    driver.api.configured_entities.remove(rt_id)
 
-    driver.api.available_entities.add(definition)
-
-    _LOG.info(f"Removed projector remote entity with id {rt_id} and name {rt_name} as available entity")
+    _LOG.info(f"Removed projector remote entity with id {rt_id} and name {rt_name} as configured entity")
 
 
 
@@ -53,7 +52,7 @@ async def update_attributes(device_id: str):
 
     _LOG.debug(f"Checking power status for remote entity attributes for {device_id}")
     try:
-        power = await projector.get_setting(device_id, config.SensorTypes.POWER_STATUS)
+        power = await projector.get_setting(device_id, enums.SensorTypes.POWER_STATUS)
     except Exception as e:
         _LOG.error(e)
         _LOG.warning(f"Can't get power state from projector. Set state to {ucapi.remote.States.UNKNOWN}")
@@ -147,7 +146,7 @@ async def cmd_handler(
         case \
             ucapi.remote.Commands.SEND_CMD:
 
-            #TODO Optimize send_cmd and send_cmd_sequence similar to requests integration
+            #TODO Optimize send_cmd and send_cmd_sequence similar to requests integration. Check if this is the actual correct behaviour
 
             command = params.get("command")
 
@@ -255,7 +254,7 @@ def create_button_mappings() -> list[ucapi.ui.DeviceButtonMapping | dict[str, An
         # ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.VOICE, "", "")),
         # ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.VOLUME_UP, "", ""),
         # ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.VOLUME_DOWN, "", ""),
-        ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.MUTE, config.SimpleCommands.PICTURE_MUTING_TOGGLE),
+        ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.MUTE, enums.SimpleCommands.PICTURE_MUTING_TOGGLE),
         ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.DPAD_UP, ucapi.media_player.Commands.CURSOR_UP),
         ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.DPAD_DOWN, ucapi.media_player.Commands.CURSOR_DOWN),
         ucapi.ui.create_btn_mapping(ucapi.ui.Buttons.DPAD_LEFT, ucapi.media_player.Commands.CURSOR_LEFT),
@@ -279,133 +278,133 @@ def create_ui_pages() -> list[ucapi.ui.UiPage | dict[str, Any]]:
     """Create a user interface with different pages that includes all commands"""
 
     ui_page1 = ucapi.ui.UiPage("page1", "Power, Inputs & HDR", grid=ucapi.ui.Size(8, 8))
-    ui_page1.add(ucapi.ui.create_ui_text("HDMI 1", 0, 0, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.INPUT_HDMI1)))
-    ui_page1.add(ucapi.ui.create_ui_text("HDMI 2", 2, 0, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.INPUT_HDMI2)))
+    ui_page1.add(ucapi.ui.create_ui_text("HDMI 1", 0, 0, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_HDMI1)))
+    ui_page1.add(ucapi.ui.create_ui_text("HDMI 2", 2, 0, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_HDMI2)))
     ui_page1.add(ucapi.ui.create_ui_icon("uc:info", 4, 0, size=ucapi.ui.Size(2, 1), \
                                         cmd=ucapi.remote.create_sequence_cmd([ucapi.media_player.Commands.MENU,ucapi.media_player.Commands.CURSOR_UP])))
     ui_page1.add(ucapi.ui.create_ui_text("On", 6, 0, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.Commands.ON))
     ui_page1.add(ucapi.ui.create_ui_text("Off", 7, 0, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.Commands.OFF))
     ui_page1.add(ucapi.ui.create_ui_text("-- HDR --", 0, 1, size=ucapi.ui.Size(8, 1)))
-    ui_page1.add(ucapi.ui.create_ui_text("On", 1, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_ON)))
-    ui_page1.add(ucapi.ui.create_ui_text("Off", 2, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_OFF)))
-    ui_page1.add(ucapi.ui.create_ui_text("Auto", 3, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_AUTO)))
-    ui_page1.add(ucapi.ui.create_ui_text("HDR10", 4, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_HDR10)))
-    ui_page1.add(ucapi.ui.create_ui_text("HDR Ref", 5, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_HDR_REF)))
-    ui_page1.add(ucapi.ui.create_ui_text("HLG", 6, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_HLG)))
+    ui_page1.add(ucapi.ui.create_ui_text("On", 1, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_ON)))
+    ui_page1.add(ucapi.ui.create_ui_text("Off", 2, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_OFF)))
+    ui_page1.add(ucapi.ui.create_ui_text("Auto", 3, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_AUTO)))
+    ui_page1.add(ucapi.ui.create_ui_text("HDR10", 4, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_HDR10)))
+    ui_page1.add(ucapi.ui.create_ui_text("HDR Ref", 5, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_HDR_REF)))
+    ui_page1.add(ucapi.ui.create_ui_text("HLG", 6, 2, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_HLG)))
     ui_page1.add(ucapi.ui.create_ui_text("-- HDR Dynamic Tone Mapping --", 0, 3, size=ucapi.ui.Size(8, 1)))
-    ui_page1.add(ucapi.ui.create_ui_text("Off", 2, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_OFF)))
-    ui_page1.add(ucapi.ui.create_ui_text("Mode 1", 3, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_1)))
-    ui_page1.add(ucapi.ui.create_ui_text("Mode 2", 4, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_2)))
-    ui_page1.add(ucapi.ui.create_ui_text("Mode 3", 5, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_3)))
+    ui_page1.add(ucapi.ui.create_ui_text("Off", 2, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_OFF)))
+    ui_page1.add(ucapi.ui.create_ui_text("Mode 1", 3, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_1)))
+    ui_page1.add(ucapi.ui.create_ui_text("Mode 2", 4, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_2)))
+    ui_page1.add(ucapi.ui.create_ui_text("Mode 3", 5, 4, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_HDR_DYNAMIC_TONE_MAPPING_3)))
     ui_page1.add(ucapi.ui.create_ui_text("-- Dynamic Contrast/HDR Enhancer --", 0, 5, size=ucapi.ui.Size(8, 1)))
-    ui_page1.add(ucapi.ui.create_ui_text("Off", 2, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_CONTRAST_ENHANCER_OFF)))
-    ui_page1.add(ucapi.ui.create_ui_text("Low", 3, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_CONTRAST_ENHANCER_LOW)))
-    ui_page1.add(ucapi.ui.create_ui_text("Mid", 4, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_CONTRAST_ENHANCER_MID)))
-    ui_page1.add(ucapi.ui.create_ui_text("High", 5, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_CONTRAST_ENHANCER_HIGH)))
+    ui_page1.add(ucapi.ui.create_ui_text("Off", 2, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_CONTRAST_ENHANCER_OFF)))
+    ui_page1.add(ucapi.ui.create_ui_text("Low", 3, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_CONTRAST_ENHANCER_LOW)))
+    ui_page1.add(ucapi.ui.create_ui_text("Mid", 4, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_CONTRAST_ENHANCER_MID)))
+    ui_page1.add(ucapi.ui.create_ui_text("High", 5, 6, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_CONTRAST_ENHANCER_HIGH)))
 
     ui_page2 = ucapi.ui.UiPage("page2", "Picture Modes", grid=ucapi.ui.Size(6, 6))
     ui_page2.add(ucapi.ui.create_ui_text("-- Picture Modes --", 0, 0, size=ucapi.ui.Size(6, 1)))
-    ui_page2.add(ucapi.ui.create_ui_text("Cinema Film 1", 0, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_CINEMA_FILM_1)))
-    ui_page2.add(ucapi.ui.create_ui_text("Cinema Film 2", 3, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_CINEMA_FILM_2)))
-    ui_page2.add(ucapi.ui.create_ui_text("Reference", 0, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_REF)))
-    ui_page2.add(ucapi.ui.create_ui_text("Game", 3, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_GAME)))
-    ui_page2.add(ucapi.ui.create_ui_text("TV", 0, 3, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_TV)))
-    ui_page2.add(ucapi.ui.create_ui_text("Bright TV", 3, 3, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_BRIGHT_TV)))
-    ui_page2.add(ucapi.ui.create_ui_text("Bright Cinema", 0, 4, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_BRIGHT_CINEMA)))
-    ui_page2.add(ucapi.ui.create_ui_text("Photo", 3, 4, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_PHOTO)))
-    ui_page2.add(ucapi.ui.create_ui_text("User", 0, 5, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_USER)))
-    ui_page2.add(ucapi.ui.create_ui_text("User1", 3, 5, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_USER1)))
-    ui_page2.add(ucapi.ui.create_ui_text("User2", 4, 5, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_USER2)))
-    ui_page2.add(ucapi.ui.create_ui_text("User3", 5, 5, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_PRESET_USER3)))
+    ui_page2.add(ucapi.ui.create_ui_text("Cinema Film 1", 0, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_CINEMA_FILM_1)))
+    ui_page2.add(ucapi.ui.create_ui_text("Cinema Film 2", 3, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_CINEMA_FILM_2)))
+    ui_page2.add(ucapi.ui.create_ui_text("Reference", 0, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_REF)))
+    ui_page2.add(ucapi.ui.create_ui_text("Game", 3, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_GAME)))
+    ui_page2.add(ucapi.ui.create_ui_text("TV", 0, 3, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_TV)))
+    ui_page2.add(ucapi.ui.create_ui_text("Bright TV", 3, 3, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_BRIGHT_TV)))
+    ui_page2.add(ucapi.ui.create_ui_text("Bright Cinema", 0, 4, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_BRIGHT_CINEMA)))
+    ui_page2.add(ucapi.ui.create_ui_text("Photo", 3, 4, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_PHOTO)))
+    ui_page2.add(ucapi.ui.create_ui_text("User", 0, 5, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_USER)))
+    ui_page2.add(ucapi.ui.create_ui_text("User1", 3, 5, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_USER1)))
+    ui_page2.add(ucapi.ui.create_ui_text("User2", 4, 5, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_USER2)))
+    ui_page2.add(ucapi.ui.create_ui_text("User3", 5, 5, size=ucapi.ui.Size(1, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_PRESET_USER3)))
 
     ui_page3 = ucapi.ui.UiPage("page3", "Aspect Ratios")
     ui_page3.add(ucapi.ui.create_ui_text("-- Aspect Ratios --", 0, 0, size=ucapi.ui.Size(4, 1)))
-    ui_page3.add(ucapi.ui.create_ui_text("Normal", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_NORMAL)))
-    ui_page3.add(ucapi.ui.create_ui_text("Squeeze", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_SQUEEZE)))
-    ui_page3.add(ucapi.ui.create_ui_text("Stretch", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_STRETCH)))
-    ui_page3.add(ucapi.ui.create_ui_text("V Stretch", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_V_STRETCH)))
-    ui_page3.add(ucapi.ui.create_ui_text("Zoom 1:85", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_ZOOM_1_85)))
-    ui_page3.add(ucapi.ui.create_ui_text("Zoom 2:35", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_ZOOM_2_35)))
-    ui_page3.add(ucapi.ui.create_ui_text("Aspect Ratio Scaling", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_ASPECT_RATIO_ASPECT_RATIO_SCALING)))
+    ui_page3.add(ucapi.ui.create_ui_text("Normal", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_NORMAL)))
+    ui_page3.add(ucapi.ui.create_ui_text("Squeeze", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_SQUEEZE)))
+    ui_page3.add(ucapi.ui.create_ui_text("Stretch", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_STRETCH)))
+    ui_page3.add(ucapi.ui.create_ui_text("V Stretch", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_V_STRETCH)))
+    ui_page3.add(ucapi.ui.create_ui_text("Zoom 1:85", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_ZOOM_1_85)))
+    ui_page3.add(ucapi.ui.create_ui_text("Zoom 2:35", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_ZOOM_2_35)))
+    ui_page3.add(ucapi.ui.create_ui_text("Aspect Ratio Scaling", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_ASPECT_RATIO_ASPECT_RATIO_SCALING)))
 
     ui_page4 = ucapi.ui.UiPage("page4", "Picture Positions Select")
     ui_page4.add(ucapi.ui.create_ui_text("-- Picture Positions Select --", 0, 0, size=ucapi.ui.Size(4, 1)))
-    ui_page4.add(ucapi.ui.create_ui_text("1,85", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_1_85)))
-    ui_page4.add(ucapi.ui.create_ui_text("2,35", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_2_35)))
-    ui_page4.add(ucapi.ui.create_ui_text("Custom 1", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_1)))
-    ui_page4.add(ucapi.ui.create_ui_text("Custom 2", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_2)))
-    ui_page4.add(ucapi.ui.create_ui_text("Custom 3", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_3)))
-    ui_page4.add(ucapi.ui.create_ui_text("Custom 4", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_4)))
-    ui_page4.add(ucapi.ui.create_ui_text("Custom 5", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_5)))
+    ui_page4.add(ucapi.ui.create_ui_text("1,85", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_1_85)))
+    ui_page4.add(ucapi.ui.create_ui_text("2,35", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_2_35)))
+    ui_page4.add(ucapi.ui.create_ui_text("Custom 1", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_1)))
+    ui_page4.add(ucapi.ui.create_ui_text("Custom 2", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_2)))
+    ui_page4.add(ucapi.ui.create_ui_text("Custom 3", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_3)))
+    ui_page4.add(ucapi.ui.create_ui_text("Custom 4", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_4)))
+    ui_page4.add(ucapi.ui.create_ui_text("Custom 5", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SELECT_CUSTOM_5)))
 
     ui_page5 = ucapi.ui.UiPage("page5", "Picture Positions Save")
     ui_page5.add(ucapi.ui.create_ui_text("-- Picture Positions Save --", 0, 0, size=ucapi.ui.Size(4, 1)))
-    ui_page5.add(ucapi.ui.create_ui_text("1,85", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_1_85)))
-    ui_page5.add(ucapi.ui.create_ui_text("2,35", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_2_35)))
-    ui_page5.add(ucapi.ui.create_ui_text("Custom 1", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_1)))
-    ui_page5.add(ucapi.ui.create_ui_text("Custom 2", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_2)))
-    ui_page5.add(ucapi.ui.create_ui_text("Custom 3", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_3)))
-    ui_page5.add(ucapi.ui.create_ui_text("Custom 4", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_4)))
-    ui_page5.add(ucapi.ui.create_ui_text("Custom 5", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_5)))
+    ui_page5.add(ucapi.ui.create_ui_text("1,85", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_1_85)))
+    ui_page5.add(ucapi.ui.create_ui_text("2,35", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_2_35)))
+    ui_page5.add(ucapi.ui.create_ui_text("Custom 1", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_1)))
+    ui_page5.add(ucapi.ui.create_ui_text("Custom 2", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_2)))
+    ui_page5.add(ucapi.ui.create_ui_text("Custom 3", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_3)))
+    ui_page5.add(ucapi.ui.create_ui_text("Custom 4", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_4)))
+    ui_page5.add(ucapi.ui.create_ui_text("Custom 5", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_POSITION_SAVE_CUSTOM_5)))
 
     ui_page6 = ucapi.ui.UiPage("page6", "Motionflow")
     ui_page6.add(ucapi.ui.create_ui_text("-- Motionflow --", 0, 0, size=ucapi.ui.Size(4, 1)))
-    ui_page6.add(ucapi.ui.create_ui_text("Off", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_MOTIONFLOW_OFF)))
-    ui_page6.add(ucapi.ui.create_ui_text("True Cinema", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_MOTIONFLOW_TRUE_CINEMA)))
-    ui_page6.add(ucapi.ui.create_ui_text("Smooth High", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_MOTIONFLOW_SMOOTH_HIGH)))
-    ui_page6.add(ucapi.ui.create_ui_text("Smooth Low", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_MOTIONFLOW_SMOOTH_LOW)))
-    ui_page6.add(ucapi.ui.create_ui_text("Impulse", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_MOTIONFLOW_IMPULSE)))
-    ui_page6.add(ucapi.ui.create_ui_text("Combination", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_MOTIONFLOW_COMBINATION)))
+    ui_page6.add(ucapi.ui.create_ui_text("Off", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_MOTIONFLOW_OFF)))
+    ui_page6.add(ucapi.ui.create_ui_text("True Cinema", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_MOTIONFLOW_TRUE_CINEMA)))
+    ui_page6.add(ucapi.ui.create_ui_text("Smooth High", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_MOTIONFLOW_SMOOTH_HIGH)))
+    ui_page6.add(ucapi.ui.create_ui_text("Smooth Low", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_MOTIONFLOW_SMOOTH_LOW)))
+    ui_page6.add(ucapi.ui.create_ui_text("Impulse", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_MOTIONFLOW_IMPULSE)))
+    ui_page6.add(ucapi.ui.create_ui_text("Combination", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_MOTIONFLOW_COMBINATION)))
 
     ui_page7 = ucapi.ui.UiPage("page7", "2D / 3D", grid=ucapi.ui.Size(6, 6))
     ui_page7.add(ucapi.ui.create_ui_text("-- 2D/3D Display Select --", 0, 0, size=ucapi.ui.Size(6, 1)))
-    ui_page7.add(ucapi.ui.create_ui_text("2D", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_2D_3D_SELECT_2D)))
-    ui_page7.add(ucapi.ui.create_ui_text("3D", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_2D_3D_SELECT_3D)))
-    ui_page7.add(ucapi.ui.create_ui_text("Auto", 4, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_2D_3D_SELECT_AUTO)))
+    ui_page7.add(ucapi.ui.create_ui_text("2D", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_2D_3D_SELECT_2D)))
+    ui_page7.add(ucapi.ui.create_ui_text("3D", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_2D_3D_SELECT_3D)))
+    ui_page7.add(ucapi.ui.create_ui_text("Auto", 4, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_2D_3D_SELECT_AUTO)))
     ui_page7.add(ucapi.ui.create_ui_text("-- 3D Format --", 0, 2, size=ucapi.ui.Size(6, 1)))
-    ui_page7.add(ucapi.ui.create_ui_text("Simulated 3D", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_3D_FORMAT_SIMULATED_3D)))
-    ui_page7.add(ucapi.ui.create_ui_text("Side-by-Side", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_3D_FORMAT_SIDE_BY_SIDE)))
-    ui_page7.add(ucapi.ui.create_ui_text("Over-Under", 4, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_3D_FORMAT_OVER_UNDER)))
+    ui_page7.add(ucapi.ui.create_ui_text("Simulated 3D", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_3D_FORMAT_SIMULATED_3D)))
+    ui_page7.add(ucapi.ui.create_ui_text("Side-by-Side", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_3D_FORMAT_SIDE_BY_SIDE)))
+    ui_page7.add(ucapi.ui.create_ui_text("Over-Under", 4, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_3D_FORMAT_OVER_UNDER)))
 
     ui_page8 = ucapi.ui.UiPage("page8", "Lens Control", grid=ucapi.ui.Size(4, 7))
     ui_page8.add(ucapi.ui.create_ui_text("-- Lens Control --", 0, 0, size=ucapi.ui.Size(4, 1)))
     ui_page8.add(ucapi.ui.create_ui_text("-- Focus --", 0, 1, size=ucapi.ui.Size(2, 1)))
     ui_page8.add(ucapi.ui.create_ui_text("-- Zoom --", 2, 1, size=ucapi.ui.Size(2, 1)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:up-arrow", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_FOCUS_NEAR)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:down-arrow", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_FOCUS_FAR)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:up-arrow-bold", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_ZOOM_LARGE)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:down-arrow-bold", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_ZOOM_SMALL)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:up-arrow-alt", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_SHIFT_UP)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:left-arrow-alt", 0, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_SHIFT_LEFT)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:right-arrow-alt", 2, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_SHIFT_RIGHT)))
-    ui_page8.add(ucapi.ui.create_ui_icon("uc:down-arrow-alt", 1, 6, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LENS_SHIFT_DOWN)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:up-arrow", 0, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_FOCUS_NEAR)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:down-arrow", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_FOCUS_FAR)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:up-arrow-bold", 2, 2, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_ZOOM_LARGE)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:down-arrow-bold", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_ZOOM_SMALL)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:up-arrow-alt", 1, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_SHIFT_UP)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:left-arrow-alt", 0, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_SHIFT_LEFT)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:right-arrow-alt", 2, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_SHIFT_RIGHT)))
+    ui_page8.add(ucapi.ui.create_ui_icon("uc:down-arrow-alt", 1, 6, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LENS_SHIFT_DOWN)))
 
     ui_page9 = ucapi.ui.UiPage("page9", "Light Control", grid=ucapi.ui.Size(6, 8))
     ui_page9.add(ucapi.ui.create_ui_text("-- Iris Brightness --", 0, 0, size=ucapi.ui.Size(3, 1)))
     ui_page9.add(ucapi.ui.create_ui_text("-- Laser Brightness --", 3, 0, size=ucapi.ui.Size(3, 1)))
-    ui_page9.add(ucapi.ui.create_ui_icon("uc:up-arrow", 0, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.IRIS_BRIGHTNESS_UP)))
-    ui_page9.add(ucapi.ui.create_ui_icon("uc:up-arrow", 3, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LASER_BRIGHTNESS_UP)))
-    ui_page9.add(ucapi.ui.create_ui_icon("uc:down-arrow", 0, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.IRIS_BRIGHTNESS_DOWN)))
-    ui_page9.add(ucapi.ui.create_ui_icon("uc:down-arrow", 3, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LASER_BRIGHTNESS_DOWN)))
+    ui_page9.add(ucapi.ui.create_ui_icon("uc:up-arrow", 0, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.IRIS_BRIGHTNESS_UP)))
+    ui_page9.add(ucapi.ui.create_ui_icon("uc:up-arrow", 3, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LASER_BRIGHTNESS_UP)))
+    ui_page9.add(ucapi.ui.create_ui_icon("uc:down-arrow", 0, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.IRIS_BRIGHTNESS_DOWN)))
+    ui_page9.add(ucapi.ui.create_ui_icon("uc:down-arrow", 3, 2, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LASER_BRIGHTNESS_DOWN)))
     ui_page9.add(ucapi.ui.create_ui_text("-- Lamp Control --", 0, 3, size=ucapi.ui.Size(2, 1)))
     ui_page9.add(ucapi.ui.create_ui_text("-- Iris Dynamic Control --", 2, 3, size=ucapi.ui.Size(2, 1)))
     ui_page9.add(ucapi.ui.create_ui_text("-- Light Source Dynamic Control --", 4, 3, size=ucapi.ui.Size(2, 1)))
-    ui_page9.add(ucapi.ui.create_ui_text("High", 0, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LAMP_CONTROL_HIGH)))
-    ui_page9.add(ucapi.ui.create_ui_text("Off", 2, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_OFF)))
-    ui_page9.add(ucapi.ui.create_ui_text("Off", 4, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_OFF)))
-    ui_page9.add(ucapi.ui.create_ui_text("Low", 0, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.LAMP_CONTROL_LOW)))
-    ui_page9.add(ucapi.ui.create_ui_text("Full", 2, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_FULL)))
-    ui_page9.add(ucapi.ui.create_ui_text("Full", 4, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_FULL)))
-    ui_page9.add(ucapi.ui.create_ui_text("Limited", 2, 6, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_LIMITED)))
+    ui_page9.add(ucapi.ui.create_ui_text("High", 0, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LAMP_CONTROL_HIGH)))
+    ui_page9.add(ucapi.ui.create_ui_text("Off", 2, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_OFF)))
+    ui_page9.add(ucapi.ui.create_ui_text("Off", 4, 4, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_OFF)))
+    ui_page9.add(ucapi.ui.create_ui_text("Low", 0, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.LAMP_CONTROL_LOW)))
+    ui_page9.add(ucapi.ui.create_ui_text("Full", 2, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_FULL)))
+    ui_page9.add(ucapi.ui.create_ui_text("Full", 4, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_FULL)))
+    ui_page9.add(ucapi.ui.create_ui_text("Limited", 2, 6, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_IRIS_CONTROL_LIMITED)))
     ui_page9.add(ucapi.ui.create_ui_text("Limited", 4, 6, size=ucapi.ui.Size(2, 1), \
-                                         cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_LIMITED)))
+                                         cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_LIMITED)))
 
     ui_page10 = ucapi.ui.UiPage("page10", "Miscellaneous")
     ui_page10.add(ucapi.ui.create_ui_text("-- Input Lag Reduction --", 0, 0, size=ucapi.ui.Size(4, 1)))
-    ui_page10.add(ucapi.ui.create_ui_text("On", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.INPUT_LAG_REDUCTION_ON)))
-    ui_page10.add(ucapi.ui.create_ui_text("Off", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.INPUT_LAG_REDUCTION_OFF)))
+    ui_page10.add(ucapi.ui.create_ui_text("On", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_LAG_REDUCTION_ON)))
+    ui_page10.add(ucapi.ui.create_ui_text("Off", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_LAG_REDUCTION_OFF)))
     ui_page10.add(ucapi.ui.create_ui_text("-- Menu Position --", 0, 2, size=ucapi.ui.Size(4, 1)))
-    ui_page10.add(ucapi.ui.create_ui_text("Bottom Left", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MENU_POSITION_BOTTOM_LEFT)))
-    ui_page10.add(ucapi.ui.create_ui_text("Center", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(config.SimpleCommands.MENU_POSITION_CENTER)))
+    ui_page10.add(ucapi.ui.create_ui_text("Bottom Left", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MENU_POSITION_BOTTOM_LEFT)))
+    ui_page10.add(ucapi.ui.create_ui_text("Center", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MENU_POSITION_CENTER)))
 
     return [ui_page1, ui_page2, ui_page3, ui_page4, ui_page5, ui_page6, ui_page7, ui_page8, ui_page9, ui_page10]

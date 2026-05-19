@@ -11,6 +11,8 @@ import config
 import driver
 import projector
 import adcp as ADCP
+import i18n
+import enums
 
 _LOG = logging.getLogger(__name__)
 
@@ -31,16 +33,14 @@ async def add(device_id: str):
 
 
 async def remove(device_id: str):
-    """Function to remove a media player entity with the config.MpDef class definition"""
+    """Function to remove a media player entity from the configured entities"""
 
     mp_name = config.Devices.get(device_id=device_id, key=config.DevicesKeys.NAME)
     mp_id= device_id
 
-    definition = config.EntityDefinitions.MediaPlayer().get_def(ent_id=mp_id, name=mp_name)
+    driver.api.configured_entities.remove(mp_id)
 
-    driver.api.available_entities.add(definition)
-
-    _LOG.info(f"Removed projector media player entity with id {mp_id} and name {mp_name} as available entity")
+    _LOG.info(f"Removed projector media player entity with id {mp_id} and name {mp_name} as configured entity")
 
 
 
@@ -106,7 +106,7 @@ class MpPollerController:
             mp_poller_interval = config.Setup.get(config.Setup.Keys.DEFAULT_POLLER_INTERVAL_MEDIA_PLAYER)
 
         if mp_poller_interval == 0:
-            _LOG.debug("Power/mute/input hours poller interval set to " + str(mp_poller_interval))
+            _LOG.debug("Power/mute/input hours poller interval is set to " + str(mp_poller_interval))
             try:
                 poller_task, = [task for task in driver.asyncio.all_tasks() if task.get_name() == name]
                 poller_task.cancel()
@@ -182,25 +182,25 @@ async def update_attributes(device_id: str):
     _LOG.debug(f"Checking power/mute/input status for media player attributes for {device_id}")
     try:
         try:
-            power = await projector.get_setting(device_id, config.SensorTypes.POWER_STATUS, standby=True)
+            power = await projector.get_setting(device_id, enums.SensorTypes.POWER_STATUS, standby=True)
         except Exception as e:
             _LOG.error(e)
             _LOG.error(f"Can't get power state from projector. Set state to {ucapi.media_player.States.UNKNOWN}")
             power = ucapi.media_player.States.UNKNOWN
 
         try:
-            muted = await projector.get_setting(device_id, config.SensorTypes.PICTURE_MUTING)
+            muted = await projector.get_setting(device_id, enums.SensorTypes.PICTURE_MUTING)
         except Exception as e:
             _LOG.error(e)
             _LOG.error("Can't get picture muting state from projector. Set state to False")
             muted = False
 
         try:
-            source = await projector.get_setting(device_id, config.SensorTypes.INPUT)
+            source = await projector.get_setting(device_id, enums.SensorTypes.INPUT)
         except Exception as e:
             _LOG.error(e)
-            _LOG.error(f"Can't get input from projector. Set input to {config.Messages.ERROR}")
-            source = config.Messages.ERROR
+            _LOG.error(f"Can't get input from projector. Set input to {i18n.Handler.localize(enums.Messages.POLLING_ERROR)}")
+            source = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
 
     except OSError as e:
         raise OSError(e) from e
@@ -215,11 +215,11 @@ async def update_attributes(device_id: str):
         muted = True
 
     if source == ADCP.Values.Inputs.HDMI1.replace("\"",""):
-        source = config.Sources.HDMI_1
+        source = enums.Sources.HDMI_1
     elif source == ADCP.Values.Inputs.HDMI2.replace("\"",""):
-        source = config.Sources.HDMI_2
+        source = enums.Sources.HDMI_2
     else:
-        source = config.Sources.UNKNOWN
+        source = enums.Messages.UNKNOWN
 
     try:
         stored_states = await driver.api.available_entities.get_states()

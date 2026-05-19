@@ -10,6 +10,8 @@ import ucapi
 import config
 import driver
 import projector
+import i18n
+import enums
 
 _LOG = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ async def add(device_id: str, select_type: str):
         select_id = config.Devices.get(device_id=device_id, key="select-"+select_type+"-id")
         select_attributes = {ucapi.select.Attributes.STATE: ucapi.select.States.ON}
 
-        if select_type not in config.SelectTypes.get_all():
+        if select_type not in enums.SelectTypes.get_all():
             _LOG.error(f"Select type {select_type} is not valid. Cannot add select entity for {device_id}. Valid types are {str(config.Setup.get('select_types'))}")
             return
 
@@ -67,22 +69,22 @@ Adding select entity anyway. It will be updated when the projector is reachable"
 
 
 async def remove(device_id: str, select_type: str):
-    """Function to remove a select entity with the config select class definition
+    """Function to remove a select entity from the configured entities list
     
     :param device_id: The device ID of the projector
     :param select_type: The type of the select entity to remove. Possible values are config.Setup["select_types"]
     """
 
-    if select_type not in config.SelectTypes.get_all():
+    if select_type not in enums.SelectTypes.get_all():
         _LOG.error(f"Select type {select_type} is not valid. Cannot remove select entity for device_id {device_id}. Valid types are {str(config.Setup.get('select_types'))}")
         return
 
     select_id = config.Devices.get(device_id=device_id, key="select-"+select_type+"-id")
     select_name = config.Devices.get(device_id=device_id, key="select-"+select_type+"-name")
 
-    driver.api.available_entities.remove(select_id)
+    driver.api.configured_entities.remove(select_id)
 
-    _LOG.info(f"Removed projector select entity with id {select_id} and name {select_name} as available entity")
+    _LOG.info(f"Removed projector select entity with id {select_id} and name {select_name} as configured entity")
 
 
 
@@ -96,8 +98,8 @@ async def update_attributes(device_id: str, select_type: str):
 
     _LOG.debug(f"Updating attributes for select entity {select_id}")
 
-    options_prettified = None
-    current_option_prettified = None
+    options_localized = None
+    current_option_localized = None
 
     try:
         options = await projector.get_setting_options(device_id, setting=select_type)
@@ -106,11 +108,12 @@ async def update_attributes(device_id: str, select_type: str):
         _LOG.info(f"Could not temporarily get options for setting \"{select_type}\". \
 Either because the projector is powered off or the current signal doesn't support this setting or mode")
         _LOG.info(f"State and options for select entity {select_id} will be updated when the projector is powered on or the input is changed")
-        _LOG.debug(f"Setting state to \"{ucapi.select.States.UNKNOWN}\" and options to \"{config.Messages.TEMPORARILY_UNAVAILABLE}\" until options can be retrieved")
+        _LOG.debug(f"Setting state to \"{ucapi.select.States.UNKNOWN}\" \
+and options to \"{i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)}\" until options can be retrieved")
         attributes = {
                     ucapi.select.Attributes.STATE: ucapi.select.States.UNKNOWN,
-                    ucapi.select.Attributes.OPTIONS: [config.Messages.TEMPORARILY_UNAVAILABLE],
-                    ucapi.select.Attributes.CURRENT_OPTION: config.Messages.TEMPORARILY_UNAVAILABLE
+                    ucapi.select.Attributes.OPTIONS: [i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)],
+                    ucapi.select.Attributes.CURRENT_OPTION: i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)
                     }
     except Exception as e:
         error_msg = str(e)
@@ -119,12 +122,36 @@ Either because the projector is powered off or the current signal doesn't suppor
         _LOG.error(f"Error while retrieving options for select entity {select_id}. Options will not be updated")
         return
     else:
-        options_prettified = config.convert_options(options, device_id)
-        current_option_prettified = config.convert_options(current_option, device_id)
+
+        if select_type in (enums.SelectTypes.PICTURE_POSITION_SELECT, enums.SelectTypes.PICTURE_POSITION_SAVE):
+            picture_positions_mapping = config.Devices.get(device_id, config.DevicesKeys.PICTURE_POSITIONS_MAPPING)
+            options_localized = []
+            if picture_positions_mapping:
+                _LOG.debug("Using custom picture positions mapping instead of localized string")
+                for option in options:
+                    if option in picture_positions_mapping:
+                        if picture_positions_mapping[option] != "":
+                            options_localized.append(picture_positions_mapping[option])
+                        else:
+                            options_localized.append(i18n.Handler.localize(option))
+                            _LOG.debug(f"No custom mapping defined for {option}. Using the localized option instead")
+                    else:
+                        options_localized.append(i18n.Handler.localize(option))
+                if current_option in picture_positions_mapping and picture_positions_mapping[current_option] != "":
+                    current_option_localized = picture_positions_mapping[current_option]
+                else:
+                    current_option_localized = i18n.Handler.localize(current_option)
+            else:
+                options_localized = i18n.Handler.localize(options)
+                current_option_localized = i18n.Handler.localize(current_option)
+        else:
+            options_localized = i18n.Handler.localize(options)
+            current_option_localized = i18n.Handler.localize(current_option)
+
         attributes = {
                 ucapi.select.Attributes.STATE: ucapi.select.States.ON,
-                ucapi.select.Attributes.OPTIONS: options_prettified,
-                ucapi.select.Attributes.CURRENT_OPTION: current_option_prettified
+                ucapi.select.Attributes.OPTIONS: options_localized,
+                ucapi.select.Attributes.CURRENT_OPTION: current_option_localized
                 }
 
     #BUG WORKAROUND Always send DeviceStates.CONNECTED when updating select entity attributes
@@ -138,8 +165,8 @@ Either because the projector is powered off or the current signal doesn't suppor
         if error_msg:
             _LOG.error(f"Exception details: {e}")
 
-    if options_prettified is not None and current_option_prettified is not None:
-        _LOG.debug(f"Updated attributes for select entity {select_id}: options={options_prettified}, current_option={ current_option_prettified}")
+    if options_localized is not None and current_option_localized is not None:
+        _LOG.debug(f"Updated attributes for select entity {select_id}: options={options_localized}, current_option={current_option_localized}")
     else:
         _LOG.debug(f"Updated attributes for select entity {select_id}")
 
@@ -147,7 +174,7 @@ Either because the projector is powered off or the current signal doesn't suppor
 
 async def update_all_selects(device_id:str):
     """Update all select entity option attributes for a specific device"""
-    for select_type in config.SelectTypes.get_all():
+    for select_type in enums.SelectTypes.get_all():
         select_id = f"select-{select_type}-{device_id}"
         if driver.api.available_entities.contains(select_id):
             try:
@@ -199,16 +226,14 @@ async def cmd_handler(entity: ucapi.Select, cmd_id: str, params: dict[str, Any] 
     setting = "-".join(parts[1:next(i for i, p in enumerate(parts) if i > 0 and p.isupper())]) if (parts := entity.id.split("-"))[0] == "select" else None
     device_id = entity.id.replace(f"select-{setting}","").removeprefix("-")
 
-    cycle = True #Using the same cycle=True default as HA as this parameter currently can't be changed by the user
+    cycle = True #https://github.com/unfoldedcircle/core-api/blob/0cb10a6066eba1abc26b687d1d0e41bea7f3efd7/doc/entities/entity_select.md?plain=1#L137
     if params:
         try:
             if params["cycle"] == "false":
                 cycle = False
                 _LOG.warning("Cycle parameter is enabled for this command but it is currently ignored")
         except KeyError:
-            pass #BUG #WAIT Cycle parameter currently not included in web configurator or commands
-        #although it's not labeled as a planned feature in the core-api docs
-        #Asked on Discord: https://discord.com/channels/553671366411288576/970313654190887011/1477021799865782304
+            pass #Needed for next/previous commands created before 2.9.0 that don't include any parameters
 
     match cmd_id:
 
@@ -269,14 +294,30 @@ async def cmd_handler(entity: ucapi.Select, cmd_id: str, params: dict[str, Any] 
             _LOG.error(f"Unknown command: {cmd_id}")
             return ucapi.StatusCodes.NOT_FOUND
 
-    if option == config.Messages.TEMPORARILY_UNAVAILABLE:
+    if option == i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE):
         _LOG.error(f"Command {setting} temporarily unavailable")
         return ucapi.StatusCodes.BAD_REQUEST
 
     command_adcp = config.UC2ADCP.get(setting)
-    value_adcp = config.convert_options(option, device_id=device_id, reverse=True)
 
-    if setting == config.SelectTypes.PICTURE_POSITION_SAVE:
+    if setting in (enums.SelectTypes.PICTURE_POSITION_SELECT, enums.SelectTypes.PICTURE_POSITION_SAVE):
+        picture_positions_mapping = config.Devices.get(device_id, config.DevicesKeys.PICTURE_POSITIONS_MAPPING)
+        if picture_positions_mapping:
+            reverse_mapping = {v: k for k, v in picture_positions_mapping.items()}
+            if option in reverse_mapping:
+                value_adcp = f'"{reverse_mapping[option]}"'
+                _LOG.debug(f"Using custom picture positions mapping to get the ADCP value for {option}: {value_adcp}")
+            else:
+                value_adcp = i18n.Handler.localize(option, reverse=True)
+        else:
+            value_adcp = i18n.Handler.localize(option, reverse=True)
+    elif cmd_id in (ucapi.select.Commands.SELECT_FIRST, ucapi.select.Commands.SELECT_LAST, ucapi.select.Commands.SELECT_NEXT, ucapi.select.Commands.SELECT_PREVIOUS):
+        #No localization needed as the option is calculated internally. Add quotes for a valid ADCP command
+        value_adcp = f"\"{option}\""
+    else:
+        value_adcp = i18n.Handler.localize(option, reverse=True)
+
+    if setting == enums.SelectTypes.PICTURE_POSITION_SAVE:
         #pic_pos_save and del commands need different values than pic_pos_sel that is used to get the options
         value_adcp = value_adcp.replace("\"","")
         value_adcp = f"--{value_adcp}"

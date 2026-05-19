@@ -271,11 +271,11 @@ _The default button mappings and ui pages can be customized in the web configura
 
 #### Media player
 
-By default the integration checks the status of all media player entity attributes **every 20 seconds** while the remote is not in standby/sleep mode or disconnected from the integration. The interval can be changed in the advanced settings. Set it to 0 to deactivate this function. **When running on the remote as a custom integration the interval will be automatically disabled (set to 0) to reduce battery consumption and save cpu/memory usage.**
+By default the integration checks the status of all media player entity attributes **every 20 seconds** while the remote is not in standby/sleep mode or disconnected from the integration. The interval can be changed in the advanced settings. Set it to 0 to deactivate this function. The poller will also be stopped if the media player entity is removed from the configured entities list. **When running on the remote as a custom integration the interval will be automatically disabled (set to 0) to reduce battery consumption and save cpu/memory usage.**
 
 #### Health status poller
 
-All health sensor data (light source timer, temperature and error/warning) will be updated every time the projector is powered on or off by the remote and automatically **every 30 minutes by default while the projector is powered on** and the remote is not in sleep/standby mode or the integration is disconnected. The interval can be changed in the advanced settings. Set it to 0 to deactivate this function. **When running on the remote as a custom integration the interval will be automatically disabled (set to 0) to reduce battery consumption and save cpu/memory usage.**
+All health sensor data (light source timer, temperature and error/warning) will be updated every time the projector is powered on or off by the remote and automatically **every 30 minutes by default while the projector is powered on** and the remote is not in sleep/standby mode or the integration is disconnected. The interval can be changed in the advanced settings. Set it to 0 to deactivate this function. The poller will also be stopped if all sensor entities updated by the poller are removed from the configured entities list. **When running on the remote as a custom integration the interval will be automatically disabled (set to 0) to reduce battery consumption and save cpu/memory usage.**
 
 ## Installation
 
