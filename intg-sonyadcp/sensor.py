@@ -298,7 +298,7 @@ async def update_video(device_id: str):
             resolution = enums.Messages.POLLING_ERROR
 
         if no_signal:
-            video_info = resolution.replace("_", " ").replace("/", " / ")
+            video_info = i18n.Handler.localize(enums.Messages.NO_SIGNAL)
             state = ucapi.sensor.States.ON
         else:
 
@@ -417,8 +417,9 @@ and value to \"{i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)}\"
 
     if current_value == "":
         current_value_localized = ""
-    #No localization needed for numeric and binary sensors
-    elif setting in (enums.SensorTypes.LASER_BRIGHTNESS, enums.SensorTypes.IRIS_BRIGHTNESS, enums.SensorTypes.TEMPERATURE, enums.SensorTypes.LIGHT_TIMER, \
+    #No localization needed for numeric and binary sensors if no error occurred during polling
+    elif current_value not in (enums.Messages.TEMPORARILY_UNAVAILABLE, enums.Messages.POLLING_ERROR) and setting in \
+                    (enums.SensorTypes.LASER_BRIGHTNESS, enums.SensorTypes.IRIS_BRIGHTNESS, enums.SensorTypes.TEMPERATURE, enums.SensorTypes.LIGHT_TIMER, \
                     enums.SensorTypes.POWER_STATUS, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION, enums.SensorTypes.BLANKING):
         current_value_localized = current_value
     elif setting == enums.SensorTypes.PICTURE_POSITION:
