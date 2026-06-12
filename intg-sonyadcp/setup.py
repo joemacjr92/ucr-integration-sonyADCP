@@ -361,6 +361,12 @@ async def show_setup_advanced():
     if isinstance(picture_positions_mapping, str):
         picture_positions_mapping = json.loads(picture_positions_mapping)
 
+    if not isinstance(picture_positions_mapping, dict):
+        picture_positions_mapping = {}
+
+    for key in ("custom1", "custom2", "custom3", "custom4", "custom5"):
+        picture_positions_mapping.setdefault(key, "")
+
     return ucapi.RequestUserInput(
         {
             "en": "Advanced Settings",
@@ -445,7 +451,7 @@ async def show_setup_advanced():
                         "de": "Benutzerdefiniert 3"
                         },
                 "field": {"text": {
-                                "value": picture_positions_mapping["custom2"]
+                                "value": picture_positions_mapping["custom3"]
                                 }
                         }
             },

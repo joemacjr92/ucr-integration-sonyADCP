@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed non working `MUTING_PIC_TOGGLE` simple command
 - Fixed localization of already localized string when a value can't be polled from the projector
+- Fixed an error during reconfiguration setup if empty custom picture position labels have been set
 - Improved performance of the entity attribute updating process when using the remote entity
 - Optimize entity attribute update process for related settings
 

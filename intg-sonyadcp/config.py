@@ -45,7 +45,7 @@ class SetupData:
     default_sdap_port: int = 53862
     default_poller_interval_media_player: int = 20
     default_poller_interval_health: int = 1800
-    default_picture_positions_mapping: str = "{\"custom1\":\"\",\"custom2\":\"\",\"Custom 3\":\"\",\"custom4\":\"\",\"custom5\":\"\"}"
+    default_picture_positions_mapping: str = "{\"custom1\":\"\",\"custom2\":\"\",\"custom3\":\"\",\"custom4\":\"\",\"custom5\":\"\"}"
     setup_complete: bool = False
     setup_reconfigure: bool = False
     setup_auto_discovery: bool  = False
