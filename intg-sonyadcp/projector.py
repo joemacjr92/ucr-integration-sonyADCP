@@ -178,7 +178,7 @@ async def send_cmd(device_id: str, cmd_name: str | dict, params = None):
         elif cmd_name in (ucapi.media_player.Commands.MUTE_TOGGLE, enums.SimpleCommands.PICTURE_MUTING_TOGGLE):
             try:
                 mute_state = await get_setting(device_id, enums.SensorTypes.PICTURE_MUTING)
-                if mute_state == ADCP.Values.States.OFF:
+                if mute_state == ADCP.Values.States.OFF.replace('"', ""):
                     mute_state = False
                 else:
                     mute_state = True
@@ -190,6 +190,24 @@ async def send_cmd(device_id: str, cmd_name: str | dict, params = None):
                     await projector_adcp.command(ADCP.Commands.Select.MUTE, ADCP.Values.States.ON)
                 elif mute_state is True:
                     await projector_adcp.command(ADCP.Commands.Select.MUTE, ADCP.Values.States.OFF)
+            except Exception:
+                raise
+
+        elif cmd_name == enums.SimpleCommands.BLANKING_TOGGLE:
+            try:
+                blanking_state = await get_setting(device_id, enums.SensorTypes.BLANKING)
+                if blanking_state == ADCP.Values.States.OFF.replace('"', ""):
+                    blanking_state = False
+                else:
+                    blanking_state = True
+            except Exception:
+                raise
+
+            try:
+                if blanking_state is False:
+                    await projector_adcp.command(ADCP.Commands.Select.BLANKING, ADCP.Values.States.ON)
+                elif blanking_state is True:
+                    await projector_adcp.command(ADCP.Commands.Select.BLANKING, ADCP.Values.States.OFF)
             except Exception:
                 raise
 
@@ -264,7 +282,7 @@ async def send_cmd(device_id: str, cmd_name: str | dict, params = None):
 
 
 
-async def update_attributes(device_id:str , cmd_name:str|dict):
+async def update_attributes(device_id:str , cmd_name:str|dict, params:dict = None):
     """Update entity attributes if the command changes or could potentially change these attributes or values"""
 
     #If cmd_name is a dict it's coming from a select entity
@@ -290,7 +308,7 @@ async def update_attributes(device_id:str , cmd_name:str|dict):
             case enums.SensorTypes.PICTURE_MUTING:
                 await media_player.update_attributes(device_id)
                 await sensor.update_video(device_id)
-            case enums.SensorTypes.HDR_STATUS | enums.SelectTypes.HDR_FORMAT:
+            case enums.SensorTypes.HDR_STATUS | enums.SelectTypes.HDR_FORMAT | enums.SensorTypes.PICTURE_PRESET:
                 await sensor.update_setting(device_id, enums.SensorTypes.GAMMA)
                 await sensor.update_setting(device_id, enums.SensorTypes.COLOR_SPACE)
                 await sensor.update_setting(device_id, enums.SensorTypes.CONTRAST_ENHANCER)
@@ -299,6 +317,8 @@ async def update_attributes(device_id:str , cmd_name:str|dict):
                 await selects.update_attributes(device_id, enums.SensorTypes.COLOR_SPACE)
                 await selects.update_attributes(device_id, enums.SensorTypes.CONTRAST_ENHANCER)
                 await selects.update_attributes(device_id, enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING)
+                await selects.update_attributes(device_id, enums.SensorTypes.LASER_BRIGHTNESS)
+                await selects.update_attributes(device_id, enums.SensorTypes.IRIS_BRIGHTNESS)
             case enums.SelectTypes.PICTURE_POSITION_SAVE | enums.SelectTypes.PICTURE_POSITION_SELECT:
                 await sensor.update_setting(device_id, enums.SensorTypes.PICTURE_POSITION)
                 await selects.update_attributes(device_id, enums.SelectTypes.PICTURE_POSITION_SELECT)
@@ -309,7 +329,7 @@ async def update_attributes(device_id:str , cmd_name:str|dict):
     #Command comes from a media player or remote entity
     else:
 
-        setting_name = ""
+        simple_command = None
 
         match cmd_name:
 
@@ -350,6 +370,8 @@ async def update_attributes(device_id:str , cmd_name:str|dict):
                 ucapi.media_player.Commands.MUTE | \
                 ucapi.media_player.Commands.UNMUTE | \
                 ucapi.media_player.Commands.MUTE_TOGGLE | \
+                enums.SimpleCommands.PICTURE_MUTING_ON | \
+                enums.SimpleCommands.PICTURE_MUTING_OFF | \
                 enums.SimpleCommands.PICTURE_MUTING_TOGGLE:
 
                 try:
@@ -373,64 +395,90 @@ async def update_attributes(device_id:str , cmd_name:str|dict):
                     raise
 
             case ucapi.remote.Commands.SEND_CMD | ucapi.remote.Commands.SEND_CMD_SEQUENCE:
-                #Update all entity attributes as any command could have been send
+                command = params.get("command")
+                if command in (item.value for item in enums.SimpleCommands) or command in (item.value for item in ucapi.media_player.Commands):
+                    simple_command = command
+                else:
+                    _LOG.debug(f"The command \"{command}\" is not a known command from this integration. It could be a native ADCP command. \
+Updating all attributes of all entities to reflect potential changes from this command")
+                    try:
+                        await media_player.update_attributes(device_id)
+                        await remote.update_attributes(device_id)
+                        await sensor.update_all_sensors(device_id)
+                        await selects.update_all_selects(device_id)
+                    except Exception:
+                        raise
+
+            case _:
+                #Simple command send by media player entity
+                simple_command = cmd_name
+
+        if simple_command:
+
+            setting_name = ""
+
+            match simple_command:
+
+                case _ if simple_command.startswith("MODE_PIC"):
+                    setting_name = enums.SensorTypes.PICTURE_PRESET
+                case _ if simple_command.startswith("MODE_AR"):
+                    setting_name = enums.SensorTypes.ASPECT
+                case _ if simple_command.startswith("PIC_POSITION_SELECT"):
+                    setting_name = enums.SensorTypes.PICTURE_POSITION
+                case _ if simple_command.startswith("PIC_POSITION_SAVE"):
+                    setting_name = enums.SelectTypes.PICTURE_POSITION_SAVE
+                case _ if simple_command.startswith("MODE_HDR") and not simple_command.startswith("MODE_HDR_TONEMAP"):
+                    setting_name = enums.SensorTypes.HDR_STATUS
+                case _ if simple_command.startswith("MODE_HDR_TONEMAP"):
+                    setting_name = enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING
+                case _ if simple_command.startswith("MODE_LAMP"):
+                    setting_name = enums.SensorTypes.LAMP_CONTROL
+                case _ if simple_command.startswith("MODE_DYN_IRIS"):
+                    setting_name = enums.SensorTypes.DYNAMIC_IRIS_CONTROL
+                case _ if simple_command.startswith("MODE_DYN_LIGHT"):
+                    setting_name = enums.SensorTypes.DYNAMIC_LIGHT_CONTROL
+                case _ if simple_command.startswith("MODE_MOTION"):
+                    setting_name = enums.SensorTypes.MOTIONFLOW
+                case _ if simple_command.startswith("MODE_2D/3D"):
+                    setting_name = enums.SensorTypes.MODE_2D_3D
+                case _ if simple_command.startswith("MODE_3D"):
+                    setting_name = enums.SensorTypes.FORMAT_3D
+                case _ if simple_command.startswith("MODE_LAG"):
+                    setting_name = enums.SensorTypes.INPUT_LAG_REDUCTION
+                case _ if simple_command.startswith("MENU_POS"):
+                    setting_name = enums.SensorTypes.MENU_POSITION
+                case _ if simple_command.startswith("MODE_DYN_CONTR"):
+                    setting_name = enums.SensorTypes.CONTRAST_ENHANCER
+                case _ if simple_command.startswith("LASER_DIM"):
+                    setting_name = enums.SensorTypes.LASER_BRIGHTNESS
+                case _ if simple_command.startswith("IRIS_BRIGHTNESS"):
+                    setting_name = enums.SensorTypes.IRIS_BRIGHTNESS
+                case _ if simple_command.startswith("MUTING"):
+                    setting_name = enums.SensorTypes.PICTURE_MUTING
+                case _ if simple_command.startswith("BLANKING"):
+                    setting_name = enums.SensorTypes.BLANKING
+                case _:
+                    _LOG.debug(f"Command \"{simple_command}\" has no associated entity attributes, sensors or select entities to update")
+                    return
+
+            if setting_name != "":
                 try:
-                    await media_player.update_attributes(device_id)
-                    await remote.update_attributes(device_id)
-                    await sensor.update_all_sensors(device_id)
-                    await selects.update_all_selects(device_id)
+                    await sensor.update_setting(device_id, setting_name)
+                    await selects.update_attributes(device_id, setting_name)
+                    if setting_name in (enums.SensorTypes.HDR_STATUS, enums.SensorTypes.PICTURE_PRESET):
+                        await sensor.update_setting(device_id, enums.SensorTypes.GAMMA)
+                        await sensor.update_setting(device_id, enums.SensorTypes.COLOR_SPACE)
+                        await sensor.update_setting(device_id, enums.SensorTypes.CONTRAST_ENHANCER)
+                        await sensor.update_setting(device_id, enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING)
+                        await sensor.update_setting(device_id, enums.SensorTypes.LASER_BRIGHTNESS)
+                        await sensor.update_setting(device_id, enums.SensorTypes.IRIS_BRIGHTNESS)
+                        await selects.update_attributes(device_id, enums.SensorTypes.GAMMA)
+                        await selects.update_attributes(device_id, enums.SensorTypes.COLOR_SPACE)
+                        await selects.update_attributes(device_id, enums.SensorTypes.CONTRAST_ENHANCER)
+                        await selects.update_attributes(device_id, enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING)
+                        await selects.update_attributes(device_id, enums.SensorTypes.LASER_BRIGHTNESS)
+                        await selects.update_attributes(device_id, enums.SensorTypes.IRIS_BRIGHTNESS)
                 except Exception:
                     raise
-
-            # Simple Commands
-            case _ if cmd_name.startswith("MODE_PIC"):
-                setting_name = enums.SensorTypes.PICTURE_PRESET
-            case _ if cmd_name.startswith("MODE_AR"):
-                setting_name = enums.SensorTypes.ASPECT
-            case _ if cmd_name.startswith("PIC_POSITION_SELECT"):
-                setting_name = enums.SensorTypes.PICTURE_POSITION
-            case _ if cmd_name.startswith("PIC_POSITION_SAVE"):
-                setting_name = enums.SelectTypes.PICTURE_POSITION_SAVE
-            case _ if cmd_name.startswith("MODE_HDR") and not cmd_name.startswith("MODE_HDR_TONEMAP"):
-                setting_name = enums.SensorTypes.HDR_STATUS
-            case _ if cmd_name.startswith("MODE_HDR_TONEMAP"):
-                setting_name = enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING
-            case _ if cmd_name.startswith("MODE_LAMP"):
-                setting_name = enums.SensorTypes.LAMP_CONTROL
-            case _ if cmd_name.startswith("MODE_DYN_IRIS"):
-                setting_name = enums.SensorTypes.DYNAMIC_IRIS_CONTROL
-            case _ if cmd_name.startswith("MODE_DYN_LIGHT"):
-                setting_name = enums.SensorTypes.DYNAMIC_LIGHT_CONTROL
-            case _ if cmd_name.startswith("MODE_MOTION"):
-                setting_name = enums.SensorTypes.MOTIONFLOW
-            case _ if cmd_name.startswith("MODE_2D/3D"):
-                setting_name = enums.SensorTypes.MODE_2D_3D
-            case _ if cmd_name.startswith("MODE_3D"):
-                setting_name = enums.SensorTypes.FORMAT_3D
-            case _ if cmd_name.startswith("MODE_LAG"):
-                setting_name = enums.SensorTypes.INPUT_LAG_REDUCTION
-            case _ if cmd_name.startswith("MENU_POS"):
-                setting_name = enums.SensorTypes.MENU_POSITION
-            case _ if cmd_name.startswith("MODE_DYN_CONTR"):
-                setting_name = enums.SensorTypes.CONTRAST_ENHANCER
-            case _ if cmd_name.startswith("LASER_DIM"):
-                setting_name = enums.SensorTypes.LASER_BRIGHTNESS
-            case _ if cmd_name.startswith("IRIS_BRIGHTNESS"):
-                setting_name = enums.SensorTypes.IRIS_BRIGHTNESS
-            case _:
-                _LOG.debug(f"Command \"{cmd_name}\" has no associated entity attributes, sensors or select entities to update")
-                return
-
-        if setting_name != "":
-            try:
-                await sensor.update_setting(device_id, setting_name)
-                await selects.update_attributes(device_id, setting_name)
-                if setting_name == enums.SensorTypes.HDR_STATUS:
-                    await sensor.update_setting(device_id, enums.SensorTypes.GAMMA)
-                    await sensor.update_setting(device_id, enums.SensorTypes.COLOR_SPACE)
-                    await selects.update_attributes(device_id, enums.SensorTypes.GAMMA)
-                    await selects.update_attributes(device_id, enums.SensorTypes.COLOR_SPACE)
-            except Exception:
-                raise
 
         _LOG.info(f"Entity attributes updated for command {cmd_name}")

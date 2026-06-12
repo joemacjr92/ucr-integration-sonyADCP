@@ -42,6 +42,7 @@ class Commands ():
         INPUT_LAG_REDUCTION = "input_lag_red"
         MENU_POSITION = "menu_pos"
         MUTE = "blank"
+        BLANKING = "blanking_enable"
         COLOR_SPACE = "color_space"
         COLOR_TEMPERATURE = "color_temp"
         GAMMA = "gamma_correction"

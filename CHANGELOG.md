@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-06-12
+
+### Added
+
+- Added a blanking sensor entity, select entity and simple commands (`BLANKING_ON`,`BLANKING_OFF`, `BLANKING_TOGGLE`)
+- Added `MUTING_PIC_ON` and `MUTING_PIC_OFF` simple commands
+
+### Fixed
+
+- Fixed non working `MUTING_PIC_TOGGLE` simple command
+- Fixed localization of already localized string when a value can't be polled from the projector
+- Improved performance of the entity attribute updating process when using the remote entity
+- Optimize entity attribute update process for related settings
+
+### Changed
+
+- Optimized check if the integration is running on the remote as a custom integration
+
 ## [1.6.0] - 2026-05-19
 
 _🎉 With firmware 2.9.3 or newer you can now finally update all custom integrations through the web configurator without having to delete the integration first and re-adding all entities on your profile pages. See [Updating](/README.md#updating)._

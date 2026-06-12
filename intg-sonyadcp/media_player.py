@@ -200,7 +200,7 @@ async def update_attributes(device_id: str):
         except Exception as e:
             _LOG.error(e)
             _LOG.error(f"Can't get input from projector. Set input to {i18n.Handler.localize(enums.Messages.POLLING_ERROR)}")
-            source = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+            source = enums.Messages.POLLING_ERROR
 
     except OSError as e:
         raise OSError(e) from e
@@ -254,7 +254,7 @@ async def update_attributes(device_id: str):
         if "muted" in attributes_to_update:
             attributes_to_send.update({ucapi.media_player.Attributes.MUTED: muted})
         if "source" in attributes_to_update:
-            attributes_to_send.update({ucapi.media_player.Attributes.SOURCE: source})
+            attributes_to_send.update({ucapi.media_player.Attributes.SOURCE: i18n.Handler.localize(source)})
 
         try:
             driver.api.configured_entities.update_attributes(device_id, attributes_to_send)

@@ -16,7 +16,6 @@ import enums
 _LOG = logging.getLogger(__name__)
 
 
-
 async def add(device_id: str, select_type: str):
     """Function to add a select entity for the given select type. Will check if the select type is supported by the projector before adding it.
     

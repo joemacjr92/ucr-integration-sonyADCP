@@ -110,6 +110,8 @@ class SimpleCommands (StrEnum):
     PICTURE_POSITION_SAVE_CUSTOM_3 =                            "PIC_POS_SAV_CUSTOM_3"
     PICTURE_POSITION_SAVE_CUSTOM_4 =                            "PIC_POS_SAV_CUSTOM_4"
     PICTURE_POSITION_SAVE_CUSTOM_5 =                            "PIC_POS_SAV_CUSTOM_5"
+    PICTURE_MUTING_ON =                                         "MUTING_PIC_ON"
+    PICTURE_MUTING_OFF =                                        "MUTING_PIC_OFF"
     PICTURE_MUTING_TOGGLE =                                     "MUTING_PIC_TOGGLE"
     LASER_BRIGHTNESS_UP =                                       "LASER_DIM_UP"
     LASER_BRIGHTNESS_DOWN =                                     "LASER_DIM_DOWN"
@@ -119,6 +121,9 @@ class SimpleCommands (StrEnum):
     LAMP_CONTROL_HIGH =                                         "LAMP_CONTROL_HIGH"
     MENU_POSITION_BOTTOM_LEFT =                                 "MENU_POS_BOTTOM_LEFT"
     MENU_POSITION_CENTER =                                      "MENU_POS_CENTER"
+    BLANKING_ON =                                               "BLANKING_ON"
+    BLANKING_OFF =                                              "BLANKING_OFF"
+    BLANKING_TOGGLE =                                           "BLANKING_TOGGLE"
     UPDATE_VIDEO_INFO =                                         "UPDATE_VIDEO_INFO"
     UPDATE_HEALTH_STATUS =                                      "UPDATE_HEALTH_STATUS"
     UPDATE_ALL_SENSORS =                                        "UPDATE_ALL_SENSORS"
@@ -183,6 +188,7 @@ class SensorTypes (StrEnum):
     MODE_2D_3D = "2d/3d-mode"
     LASER_BRIGHTNESS = "laser-brightness"
     IRIS_BRIGHTNESS = "iris-brightness"
+    BLANKING = "blanking"
 
     @staticmethod
     def get_all():
@@ -213,6 +219,7 @@ class SelectTypes (StrEnum):
     COLOR_SPACE = "color-space"
     GAMMA = "gamma"
     CONTRAST_ENHANCER = "contrast-enhancer"
+    BLANKING = "blanking"
 
     @staticmethod
     def get_all():

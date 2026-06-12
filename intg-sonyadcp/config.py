@@ -154,6 +154,10 @@ class UC2ADCP:
         enums.SimpleCommands.LAMP_CONTROL_HIGH: f"{ADCP.Commands.Select.LAMP_CONTROL} {ADCP.Values.LampControl.HIGH}",
         enums.SimpleCommands.INPUT_LAG_REDUCTION_ON: f"{ADCP.Commands.Select.INPUT_LAG_REDUCTION} {ADCP.Values.States.ON}",
         enums.SimpleCommands.INPUT_LAG_REDUCTION_OFF: f"{ADCP.Commands.Select.INPUT_LAG_REDUCTION} {ADCP.Values.States.OFF}",
+        enums.SimpleCommands.BLANKING_ON: f"{ADCP.Commands.Select.BLANKING} {ADCP.Values.States.ON}",
+        enums.SimpleCommands.BLANKING_OFF: f"{ADCP.Commands.Select.BLANKING} {ADCP.Values.States.OFF}",
+        enums.SimpleCommands.PICTURE_MUTING_ON: f"{ADCP.Commands.Select.MUTE} {ADCP.Values.States.ON}",
+        enums.SimpleCommands.PICTURE_MUTING_OFF: f"{ADCP.Commands.Select.MUTE} {ADCP.Values.States.OFF}",
         enums.SimpleCommands.MENU_POSITION_BOTTOM_LEFT: f"{ADCP.Commands.Select.MENU_POSITION} {ADCP.Values.MenuPosition.BOTTOM_LEFT}",
         enums.SimpleCommands.MENU_POSITION_CENTER: f"{ADCP.Commands.Select.MENU_POSITION} {ADCP.Values.MenuPosition.CENTER}",
         #ADCP numeric commands
@@ -175,6 +179,7 @@ class UC2ADCP:
             #Select commands
             enums.SensorTypes.INPUT : ADCP.Commands.Select.INPUT,
             enums.SensorTypes.PICTURE_MUTING: ADCP.Commands.Select.MUTE,
+            enums.SensorTypes.BLANKING: ADCP.Commands.Select.BLANKING,
             enums.SensorTypes.PICTURE_PRESET : ADCP.Commands.Select.PICTURE_MODE,
             enums.SensorTypes.ASPECT : ADCP.Commands.Select.ASPECT,
             enums.SensorTypes.MOTIONFLOW : ADCP.Commands.Select.MOTIONFLOW,
@@ -203,6 +208,7 @@ class UC2ADCP:
         enums.SelectTypes.POWER : ADCP.Commands.Select.POWER,
         enums.SelectTypes.INPUT : ADCP.Commands.Select.INPUT,
         enums.SelectTypes.PICTURE_MUTING: ADCP.Commands.Select.MUTE,
+        enums.SelectTypes.BLANKING: ADCP.Commands.Select.BLANKING,
         enums.SelectTypes.PICTURE_PRESET : ADCP.Commands.Select.PICTURE_MODE,
         enums.SelectTypes.ASPECT : ADCP.Commands.Select.ASPECT,
         enums.SelectTypes.MOTIONFLOW : ADCP.Commands.Select.MOTIONFLOW,

@@ -87,6 +87,7 @@ async def cmd_handler(
 
     if not params:
         _LOG.info(f"Received {cmd_id} command for {entity.id}")
+        params = {}
     else:
         _LOG.info(f"Received {cmd_id} command with parameter {params} for {entity.id}")
         repeat = params.get("repeat")
@@ -112,7 +113,7 @@ async def cmd_handler(
 
     async def update_cmd_attributes(device_id: str, cmd_id: str):
         try:
-            await projector.update_attributes(device_id, cmd_id)
+            await projector.update_attributes(device_id, cmd_id, params)
         except Exception as e:
             #No exception as this is not a critical error. The command itself was sent successfully. Not all query commands are supported by all projector models
             _LOG.error(f"Failed to update entity attributes for device {device_id} after command {cmd_id}: {e}")
@@ -399,12 +400,20 @@ def create_ui_pages() -> list[ucapi.ui.UiPage | dict[str, Any]]:
     ui_page9.add(ucapi.ui.create_ui_text("Limited", 4, 6, size=ucapi.ui.Size(2, 1), \
                                          cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MODE_DYNAMIC_LIGHT_CONTROL_LIMITED)))
 
-    ui_page10 = ucapi.ui.UiPage("page10", "Miscellaneous")
-    ui_page10.add(ucapi.ui.create_ui_text("-- Input Lag Reduction --", 0, 0, size=ucapi.ui.Size(4, 1)))
-    ui_page10.add(ucapi.ui.create_ui_text("On", 0, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_LAG_REDUCTION_ON)))
-    ui_page10.add(ucapi.ui.create_ui_text("Off", 2, 1, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_LAG_REDUCTION_OFF)))
-    ui_page10.add(ucapi.ui.create_ui_text("-- Menu Position --", 0, 2, size=ucapi.ui.Size(4, 1)))
-    ui_page10.add(ucapi.ui.create_ui_text("Bottom Left", 0, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MENU_POSITION_BOTTOM_LEFT)))
-    ui_page10.add(ucapi.ui.create_ui_text("Center", 2, 3, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MENU_POSITION_CENTER)))
+    ui_page10 = ucapi.ui.UiPage("page10", "Miscellaneous", grid=ucapi.ui.Size(6, 8))
+    ui_page10.add(ucapi.ui.create_ui_text("-- Input Lag Reduction --", 0, 0, size=ucapi.ui.Size(6, 1)))
+    ui_page10.add(ucapi.ui.create_ui_text("On", 0, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_LAG_REDUCTION_ON)))
+    ui_page10.add(ucapi.ui.create_ui_text("Off", 3, 1, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.INPUT_LAG_REDUCTION_OFF)))
+    ui_page10.add(ucapi.ui.create_ui_text("-- Menu Position --", 0, 2, size=ucapi.ui.Size(6, 1)))
+    ui_page10.add(ucapi.ui.create_ui_text("Bottom Left", 0, 3, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MENU_POSITION_BOTTOM_LEFT)))
+    ui_page10.add(ucapi.ui.create_ui_text("Center", 3, 3, size=ucapi.ui.Size(3, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.MENU_POSITION_CENTER)))
+    ui_page10.add(ucapi.ui.create_ui_text("-- Blanking --", 0, 4, size=ucapi.ui.Size(6, 1)))
+    ui_page10.add(ucapi.ui.create_ui_text("On", 0, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.BLANKING_ON)))
+    ui_page10.add(ucapi.ui.create_ui_text("Off", 2, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.BLANKING_OFF)))
+    ui_page10.add(ucapi.ui.create_ui_text("Toggle", 4, 5, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.BLANKING_TOGGLE)))
+    ui_page10.add(ucapi.ui.create_ui_text("-- Picture Muting --", 0, 6, size=ucapi.ui.Size(6, 1)))
+    ui_page10.add(ucapi.ui.create_ui_text("On", 0, 7, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_MUTING_ON)))
+    ui_page10.add(ucapi.ui.create_ui_text("Off", 2, 7, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_MUTING_OFF)))
+    ui_page10.add(ucapi.ui.create_ui_text("Toggle", 4, 7, size=ucapi.ui.Size(2, 1), cmd=ucapi.remote.create_send_cmd(enums.SimpleCommands.PICTURE_MUTING_TOGGLE)))
 
     return [ui_page1, ui_page2, ui_page3, ui_page4, ui_page5, ui_page6, ui_page7, ui_page8, ui_page9, ui_page10]

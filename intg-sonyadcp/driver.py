@@ -356,8 +356,9 @@ async def main():
 
     setup_logger()
 
-    #Check if integration runs in a PyInstaller bundle on the remote and adjust the logging format, config file path and disable power/mute/input poller task
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    #Check if the integration runs in a PyInstaller bundle and under systemd (which usually indicates that it's running on the remote)
+    #and adjust the logging format, config file path and disable power/mute/input poller task
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS") and os.getenv("INVOCATION_ID"):
 
         _LOG.info("This integration is running in a PyInstaller bundle. Probably on the remote hardware")
         config.Setup.set(config.Setup.Keys.BUNDLE_MODE, True)

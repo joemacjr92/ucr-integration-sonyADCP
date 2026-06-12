@@ -118,6 +118,7 @@ Please note that when running this integration on the remote the power/mute/inpu
   - 2D/3D Mode
   - 3D Format
   - Input Lag Reduction
+  - Blanking
   - Menu Position
   - Color Temperature
   - Color Space
@@ -153,6 +154,7 @@ Please note that when running this integration on the remote the power/mute/inpu
   - Motionflow
   - 3D Format
   - Input Lag Reduction
+  - Blanking
   - Menu Position
   - Color Temperature
   - Color Space
@@ -170,7 +172,7 @@ Please note that when running this integration on the remote the power/mute/inpu
 - Mute/Unmute/Toggle
   - Used for picture muting
 - Cursor Up/Down/Left/Right/Enter/Back
-  - The back command is also mapped to cursor left as there is no separate back command for the projector. Inside the setup menu cursor left has the same function as a typical back command
+  - The back command is also mapped to cursor left as there is no separate back command for the projector. Inside the projector menu cursor left has the same function as a typical back command
 - Home & Menu
   - Opens the setup menu
 - Source Select
@@ -217,6 +219,10 @@ Please note that when running this integration on the remote the power/mute/inpu
   - Simulated 3D, Side-by-Side, Over-Under
 - Input Lag Reduction*
   - On, Off
+- Blanking
+  - On, Off, Toggle
+- Picture Muting
+  - On, Off, Toggle
 - Menu Position
   - Bottom Left, Center
 - Lens Control***

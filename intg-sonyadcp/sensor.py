@@ -43,7 +43,7 @@ async def add(device_id: str, sensor_type: str):
         elif sensor_type in (enums.SensorTypes.VIDEO_SIGNAL, enums.SensorTypes.SYSTEM_STATUS):
             sensor_device_class = ucapi.sensor.DeviceClasses.CUSTOM
 
-        elif sensor_type in (enums.SensorTypes.POWER_STATUS, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION):
+        elif sensor_type in (enums.SensorTypes.POWER_STATUS, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION, enums.SensorTypes.BLANKING):
             sensor_device_class = ucapi.sensor.DeviceClasses.BINARY
             sensor_attributes.update({ucapi.sensor.Attributes.VALUE: "off"}) #An empty value will otherwise be interpreted as on
             #TODO #WAIT Uncomment when binary sensor device classes are implemented (no 🚧 prefix) and replace string with ucapi literal
@@ -226,8 +226,8 @@ async def update_system(device_id: str):
     except Exception as e:
         _LOG.warning(f"Failed to get error and warning messages from {device_id}")
         _LOG.debug(e)
-        current_value = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
-        current_value_localized = current_value
+        current_value = enums.Messages.POLLING_ERROR
+        current_value_localized = i18n.Handler.localize(current_value)
 
     try:
         stored_states = await driver.api.available_entities.get_states()
@@ -245,7 +245,7 @@ async def update_system(device_id: str):
         _LOG.info(f"Error and warning messages for {device_id} have not been set yet")
         stored_value = ""
 
-    if current_value in (i18n.Handler.localize(enums.Messages.POLLING_ERROR), i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)):
+    if current_value in (enums.Messages.POLLING_ERROR, enums.Messages.TEMPORARILY_UNAVAILABLE):
         _LOG.warning(f"Couldn't get error and warning messages for {device_id}. Setting state to \"{ucapi.select.States.UNKNOWN}\"")
         attributes_to_send = {ucapi.sensor.Attributes.STATE: ucapi.sensor.States.UNKNOWN, ucapi.sensor.Attributes.VALUE: current_value_localized}
     else:
@@ -291,11 +291,11 @@ async def update_video(device_id: str):
         try:
             resolution = await projector.get_setting(device_id, enums.SensorVideoSignalTypes.RESOLUTION)
             if resolution == ADCP.Responses.States.INVALID.replace("\"", "").title(): #Compare with converted value from get_setting()
-                resolution = i18n.Handler.localize(enums.Messages.NO_SIGNAL)
+                resolution = enums.Messages.NO_SIGNAL
                 no_signal = True
         except Exception:
             _LOG.warning(f"Failed to get video resolution from {device_id}")
-            resolution = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+            resolution = enums.Messages.POLLING_ERROR
 
         if no_signal:
             video_info = resolution.replace("_", " ").replace("/", " / ")
@@ -308,34 +308,43 @@ async def update_video(device_id: str):
                 dyn_range = await projector.get_setting(device_id, enums.SensorVideoSignalTypes.DYNAMIC_RANGE)
             except Exception:
                 _LOG.warning(f"Failed to get dynamic range from {device_id}")
-                dyn_range = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+                dyn_range = enums.Messages.POLLING_ERROR
 
             try:
                 color_space = await projector.get_setting(device_id, enums.SensorTypes.COLOR_SPACE)
             except Exception:
                 _LOG.warning(f"Failed to get color space from {device_id}")
-                color_space = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+                color_space = enums.Messages.POLLING_ERROR
 
             try:
                 color_format = await projector.get_setting(device_id, enums.SensorVideoSignalTypes.COLOR_FORMAT)
             except Exception:
                 _LOG.warning(f"Failed to get color format from {device_id}")
-                color_format = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+                color_format = enums.Messages.POLLING_ERROR
 
             try:
                 mode_2d_3d = await projector.get_setting(device_id, enums.SensorTypes.MODE_2D_3D)
             except Exception:
                 _LOG.warning(f"Failed to get 2d/3d mode from {device_id}")
-                mode_2d_3d = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+                mode_2d_3d = enums.Messages.POLLING_ERROR
 
-            if any(value == i18n.Handler.localize(enums.Messages.POLLING_ERROR) for value in (resolution, dyn_range, color_space, color_format, mode_2d_3d)):
+            if any(value == enums.Messages.POLLING_ERROR for value in (resolution, dyn_range, color_space, color_format, mode_2d_3d)):
                 _LOG.warning(f"Couldn't get (some) video infos for {device_id}. Setting sensor state to \"{ucapi.sensor.States.UNKNOWN}\"")
                 state = ucapi.sensor.States.UNKNOWN
             else:
                 state = ucapi.sensor.States.ON
 
-            video_info = \
-f"{resolution} / {dyn_range.upper()} / {i18n.Handler.localize(color_space)} / {i18n.Handler.localize(color_format)} / {i18n.Handler.localize(mode_2d_3d)}"
+            # Localize each part if needed (values can be enums or raw strings)
+            def _local(v: object) -> str:
+                return i18n.Handler.localize(v) if hasattr(v, "value") or isinstance(v, str) else str(v)
+
+            res_part = _local(resolution).replace("_", " ").replace("/", " / ")
+            dyn_part = _local(dyn_range).upper()
+            cs_part = _local(color_space)
+            cf_part = _local(color_format)
+            md_part = _local(mode_2d_3d)
+
+            video_info = f"{res_part} / {dyn_part} / {cs_part} / {cf_part} / {md_part}"
 
     attributes_to_send = {ucapi.sensor.Attributes.STATE: state, ucapi.sensor.Attributes.VALUE: video_info}
 
@@ -383,30 +392,34 @@ async def update_setting(device_id: str, setting: str):
         _LOG.info(f"Could not temporarily get options for setting \"{setting}\". \
 Either because the projector is powered off or the current signal doesn't support this setting or mode")
         #These are binary or temperature sensors that only accept ints or bools as values
-        if not setting in (enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION):
+        if not setting in (enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION, enums.SensorTypes.BLANKING):
             _LOG.info(f"Setting state to \"{ucapi.sensor.States.UNKNOWN}\" \
 and value to \"{i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)}\" until options can be retrieved")
             _LOG.info("State and value for this sensor will be updated when the projector is powered on or the input is changed")
-            current_value = i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)
+            current_value = enums.Messages.TEMPORARILY_UNAVAILABLE
         else:
             _LOG.info(f"Setting state to \"{ucapi.sensor.States.UNKNOWN}\" until value can be retrieved")
             _LOG.info("State for this sensor will be updated when the projector is powered on or the input is changed")
             current_value = ""
     except Exception as e:
         #These are binary or temperature sensors that only accept ints or bools as values
-        if not setting in (enums.SensorTypes.TEMPERATURE, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION):
+        if not setting in (enums.SensorTypes.TEMPERATURE, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION, enums.SensorTypes.BLANKING):
             _LOG.warning(f"Failed to get {setting} value from {device_id}. \
                          Setting value to \"{i18n.Handler.localize(enums.Messages.POLLING_ERROR)}\" and state to \"{ucapi.sensor.States.UNAVAILABLE}\"")
             _LOG.debug(e)
-            current_value = i18n.Handler.localize(enums.Messages.POLLING_ERROR)
+            current_value = enums.Messages.POLLING_ERROR
 
     state = ucapi.sensor.States.UNAVAILABLE
-    if current_value in (i18n.Handler.localize(enums.Messages.POLLING_ERROR), i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE), ""):
+    if current_value in (enums.Messages.POLLING_ERROR, enums.Messages.TEMPORARILY_UNAVAILABLE, ""):
         state = ucapi.sensor.States.UNKNOWN
     else:
         state = ucapi.sensor.States.ON
 
-    if setting in (enums.SensorTypes.LASER_BRIGHTNESS, enums.SensorTypes.IRIS_BRIGHTNESS, enums.SensorTypes.TEMPERATURE, enums.SensorTypes.LIGHT_TIMER):
+    if current_value == "":
+        current_value_localized = ""
+    #No localization needed for numeric and binary sensors
+    elif setting in (enums.SensorTypes.LASER_BRIGHTNESS, enums.SensorTypes.IRIS_BRIGHTNESS, enums.SensorTypes.TEMPERATURE, enums.SensorTypes.LIGHT_TIMER, \
+                    enums.SensorTypes.POWER_STATUS, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION, enums.SensorTypes.BLANKING):
         current_value_localized = current_value
     elif setting == enums.SensorTypes.PICTURE_POSITION:
         picture_positions_mapping = config.Devices.get(device_id, config.DevicesKeys.PICTURE_POSITIONS_MAPPING)
@@ -420,15 +433,13 @@ and value to \"{i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)}\"
         else:
             _LOG.warning(f"No custom picture positions mapping found for {setting}. Using the unmapped value for localization")
             current_value_localized = i18n.Handler.localize(current_value)
-    elif setting not in (enums.SensorTypes.POWER_STATUS, enums.SensorTypes.PICTURE_MUTING, enums.SensorTypes.INPUT_LAG_REDUCTION):
-        current_value_localized = i18n.Handler.localize(current_value)
     else:
         current_value_localized = i18n.Handler.localize(current_value)
 
     #Laser brightness shown in projector menu has a different scale than adcp value
     #Might also needs to be done with IRIS_BRIGHTNESS. Wait for user feedback
     if setting == enums.SensorTypes.LASER_BRIGHTNESS and current_value not in \
-        (i18n.Handler.localize(enums.Messages.POLLING_ERROR), i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)):
+        (enums.Messages.POLLING_ERROR, enums.Messages.TEMPORARILY_UNAVAILABLE):
         current_value_localized = int(current_value_localized)/10
 
     #Check if the sensor value has changed since the last update to avoid unnecessary updates due to poller tasks that run even if no setting might have been changed
@@ -454,7 +465,7 @@ and value to \"{i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE)}\"
         _LOG.info(f"Sensor value for {sensor_id} has not been set yet")
         stored_value = ""
 
-    if current_value in (i18n.Handler.localize(enums.Messages.POLLING_ERROR), i18n.Handler.localize(enums.Messages.TEMPORARILY_UNAVAILABLE), ""):
+    if current_value in (enums.Messages.POLLING_ERROR, enums.Messages.TEMPORARILY_UNAVAILABLE, ""):
         _LOG.warning(f"Couldn't get {setting} value from {device_id}. Setting state to \"{ucapi.sensor.States.UNKNOWN}\"")
         attributes_to_send = \
         {ucapi.sensor.Attributes.STATE: ucapi.sensor.States.UNKNOWN, ucapi.sensor.Attributes.VALUE: current_value_localized, ucapi.sensor.Attributes.UNIT: ""}

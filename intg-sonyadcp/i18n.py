@@ -22,6 +22,7 @@ class Strings:
             #Sensor+Selects
             enums.SensorTypes.INPUT: "Input",
             enums.SensorTypes.PICTURE_MUTING: "Video Muting",
+            enums.SensorTypes.BLANKING: "Blanking",
             enums.SensorTypes.PICTURE_PRESET: "Picture Preset",
             enums.SensorTypes.ASPECT: "Aspect",
             enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING: "Dynamic HDR Tone Mapping",
@@ -216,6 +217,7 @@ class Strings:
             #Sensor+Selects
             enums.SensorTypes.INPUT: "Eingang",
             enums.SensorTypes.PICTURE_MUTING: "Video Ausschalten",
+            enums.SensorTypes.BLANKING: "Blanking",
             enums.SensorTypes.PICTURE_PRESET: "Voreinstellung",
             enums.SensorTypes.ASPECT: "Seitenverhältnis",
             enums.SensorTypes.HDR_DYNAMIC_TONE_MAPPING: "HDR Tone-Mapping",
@@ -435,6 +437,8 @@ class Handler:
             return [cls.localize(k, force_language, reverse) for k in key]
 
         normalized_key = key.value.replace("\"", "") if hasattr(key, "value") else key.replace("\"", "")
+        if normalized_key == "":
+            return ""
         quoted_key = f'"{normalized_key}"'
         language = force_language if force_language is not None else cls._language
 
@@ -446,6 +450,10 @@ class Handler:
                 for k, v in lookup.items():
                     if v == normalized_key:
                         return k
+
+        for lookup in lookups + fallback_lookups:
+            if normalized_key in lookup.values():
+                return normalized_key
 
         for lookup in lookups:
             if normalized_key in lookup:
