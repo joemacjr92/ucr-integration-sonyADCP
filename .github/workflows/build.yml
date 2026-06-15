@@ -97,6 +97,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/arm64
           push: true
+          provenance: false
           build-args: |
             DRIVER_ID=${{ env.DRIVER_ID }}
           tags: |
@@ -113,6 +114,9 @@ jobs:
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.driver_id }}-${{ needs.build.outputs.version }}-aarch64
+          pattern: uc-intg-*
 
       - name: Extract build archives from downloaded files
         run: |
