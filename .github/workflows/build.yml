@@ -115,8 +115,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: ${{ needs.build.outputs.driver_id }}-${{ needs.build.outputs.version }}-aarch64
-          pattern: uc-intg-*
+          name: uc-intg-${{ needs.build.outputs.driver_id }}-${{ needs.build.outputs.version }}-aarch64
 
       - name: Extract build archives from downloaded files
         run: |
