@@ -2,8 +2,8 @@ FROM scratch
 
 ARG DRIVER_ID
 
-COPY artifacts/bin/ /driver/
-COPY artifacts/driver.json /driver/driver.json
+COPY driver /driver/driver
+COPY driver.json /driver/driver.json
 
 WORKDIR /driver
 

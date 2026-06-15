@@ -18,7 +18,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    #Save version to env output variable to be able to use it in the following release job as a tag
     outputs:
       version: ${{ steps.get-version-and-id.outputs.VERSION }}
       driver_id: ${{ steps.get-version-and-id.outputs.DRIVER_ID }}
@@ -26,26 +25,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          # History of 200 should be more than enough to calculate commit count since last release tag
           fetch-depth: 200
 
       - name: Get version and id
-        #Id needed for env output variable
         id: get-version-and-id
         run: |
           echo "VERSION=$(jq .version -r driver.json)" >> $GITHUB_ENV
           echo "DRIVER_ID=$(jq .driver_id -r driver.json)" >> $GITHUB_ENV
-          # Save to Github output to later use it in Create Release job
           echo "VERSION=$(jq .version -r driver.json)" >> $GITHUB_OUTPUT
           echo "DRIVER_ID=$(jq .driver_id -r driver.json)" >> $GITHUB_OUTPUT
 
-
-      - name: Build
+      - name: Build aarch64 binary (for remote installation)
         run: |
           sudo apt-get update && sudo apt-get install -y qemu-system-arm binfmt-support qemu-user-static
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          echo "Starting pyinstaller build"
-          docker run --rm --name builder \
+          echo "Starting pyinstaller build (aarch64)"
+          docker run --rm --name builder-arm64 \
             --platform=linux/arm64/v8 \
             --user=$(id -u):$(id -g) \
             -v ${GITHUB_WORKSPACE}:/workspace \
@@ -54,24 +49,46 @@ jobs:
             "python -m pip install -r /workspace/requirements.txt && \
               cd /workspace/intg-${INTG_NAME} && \
               pyinstaller --clean --onedir --name driver_build --collect-all zeroconf driver.py && \
-              mv dist /workspace/dist && \
-              mv build /workspace/build"
+              mv dist /workspace/dist-arm64 && \
+              rm -rf build"
+
+      - name: Build amd64 binary (for Docker image)
+        run: |
+          echo "Starting pyinstaller build (amd64)"
+          docker run --rm --name builder-amd64 \
+            --platform=linux/amd64 \
+            --user=$(id -u):$(id -g) \
+            -v ${GITHUB_WORKSPACE}:/workspace \
+            docker.io/unfoldedcircle/r2-pyinstaller:${PYTHON_VER} \
+            bash -c \
+            "python -m pip install -r /workspace/requirements.txt && \
+              cd /workspace/intg-${INTG_NAME} && \
+              pyinstaller --clean --onedir --name driver_build --collect-all zeroconf driver.py && \
+              mv dist /workspace/dist-amd64 && \
+              rm -rf build"
 
       - name: Prepare artifacts
         shell: bash
         run: |
           mkdir -p artifacts/bin
-          mv dist/driver_build/* artifacts/bin
+          mv dist-arm64/driver_build/* artifacts/bin
           mv artifacts/bin/driver_build artifacts/bin/driver
           cp driver.json artifacts/
           echo "ARTIFACT_NAME=uc-intg-${{ env.DRIVER_ID }}-${{ env.VERSION }}-aarch64" >> $GITHUB_ENV
-          
+
+          mkdir -p docker-artifacts/bin-amd64 docker-artifacts/bin-arm64
+          cp -r dist-amd64/driver_build/* docker-artifacts/bin-amd64/
+          mv docker-artifacts/bin-amd64/driver_build docker-artifacts/bin-amd64/driver
+          cp -r dist-arm64/driver_build/* docker-artifacts/bin-arm64/
+          mv docker-artifacts/bin-arm64/driver_build docker-artifacts/bin-arm64/driver
+          cp driver.json docker-artifacts/
+
       - name: Create upload artifact archive
         shell: bash
-        run: | 
+        run: |
           tar czvf ${{ env.ARTIFACT_NAME }}.tar.gz -C ${GITHUB_WORKSPACE}/artifacts .
           ls -lah
-          
+
       - uses: actions/upload-artifact@v7
         id: upload_artifact
         with:
@@ -90,12 +107,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (amd64)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: docker-artifacts/bin-amd64
           file: ./Dockerfile
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           provenance: false
           build-args: |
@@ -120,8 +137,6 @@ jobs:
       - name: Extract build archives from downloaded files
         run: |
           ls -R
-          # extract tar.gz build archives from downloaded artifacts
-          # (wrapped in tar from actions/upload-artifact, then extracted into a directory by actions/download-artifact)
           for D in * 
             do if [ -d "${D}" ]; then
               mv $D/* ./
