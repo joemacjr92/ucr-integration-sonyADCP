@@ -124,9 +124,9 @@ jobs:
       - name: Build and push Docker image (amd64)
         uses: docker/build-push-action@v6
         with:
-          # CHANGE THIS LINE to point to your raw source code folder
-          context: ./intg-sonyadcp 
-          file: ./intg-sonyadcp/Dockerfile
+          # Tell Docker to look at the root of the repository
+          context: . 
+          file: ./Dockerfile
           platforms: linux/amd64
           push: true
           provenance: false
