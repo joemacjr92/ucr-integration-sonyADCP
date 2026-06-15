@@ -51,9 +51,11 @@ jobs:
             -v ${GITHUB_WORKSPACE}:/workspace \
             docker.io/unfoldedcircle/r2-pyinstaller:${PYTHON_VER} \
             bash -c \
-            "cd /workspace && \
-              python -m pip install -r requirements.txt && \
-              pyinstaller --clean --onedir --name intg-${DRIVER_ID} --collect-all zeroconf --paths intg-${INTG_NAME} intg-${INTG_NAME}/driver.py"
+            "python -m pip install -r /workspace/requirements.txt && \
+              cd /workspace/intg-${INTG_NAME} && \
+              pyinstaller --clean --onedir --name intg-${DRIVER_ID} --collect-all zeroconf driver.py && \
+              mv dist /workspace/dist && \
+              mv build /workspace/build"
 
       - name: Prepare artifacts
         shell: bash
