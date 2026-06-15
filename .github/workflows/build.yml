@@ -75,7 +75,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts/bin
-          mv dist-arm64/driver_build/* artifacts/bin
+          # Changed to cp -r so files are preserved for the Docker step below
+          cp -r dist-arm64/driver_build/* artifacts/bin/
+          # Rename the executable binary from 'driver_build' to 'driver'
           mv artifacts/bin/driver_build artifacts/bin/driver
           cp driver.json artifacts/
           echo "ARTIFACT_NAME=uc-intg-${{ env.DRIVER_ID }}-${{ env.VERSION }}-aarch64" >> $GITHUB_ENV
@@ -83,6 +85,8 @@ jobs:
           mkdir -p docker-artifacts/bin-amd64 docker-artifacts/bin-arm64
           cp -r dist-amd64/driver_build/* docker-artifacts/bin-amd64/
           mv docker-artifacts/bin-amd64/driver_build docker-artifacts/bin-amd64/driver
+          
+          # This will now succeed because the source folder is no longer empty
           cp -r dist-arm64/driver_build/* docker-artifacts/bin-arm64/
           mv docker-artifacts/bin-arm64/driver_build docker-artifacts/bin-arm64/driver
           cp driver.json docker-artifacts/
