@@ -3,6 +3,7 @@
 name: "Build & Draft Release"
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*"
