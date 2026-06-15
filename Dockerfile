@@ -11,6 +11,9 @@ RUN mkdir -p /config
 # Copy the entire repository into /app
 COPY . .
 
+# FIX: Copy the driver.json file into the subfolder so the Python script can see it
+RUN cp driver.json intg-sonyadcp/
+
 # Unfolded Circle Environment Variables
 ENV UC_DISABLE_MDNS_PUBLISH="false"
 ENV UC_MDNS_LOCAL_HOSTNAME=""
