@@ -2,8 +2,7 @@ FROM scratch
 
 ARG DRIVER_ID
 
-COPY driver /driver/driver
-COPY driver.json /driver/driver.json
+COPY . /driver/
 
 WORKDIR /driver
 

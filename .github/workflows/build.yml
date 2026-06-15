@@ -61,15 +61,18 @@ jobs:
 
       - name: Build amd64 binary (for Docker image)
         run: |
-          echo "Starting native pyinstaller build (amd64)"
-          python3 -m venv /tmp/venv-amd64
-          /tmp/venv-amd64/bin/pip install --upgrade pip
-          /tmp/venv-amd64/bin/pip install -r requirements.txt pyinstaller
-          cd intg-${INTG_NAME}
-          /tmp/venv-amd64/bin/pyinstaller --clean --onedir --name driver_build --collect-all zeroconf driver.py
-          mv dist ${GITHUB_WORKSPACE}/dist-amd64
-          rm -rf build
-          cd ${GITHUB_WORKSPACE}
+          echo "Starting Docker pyinstaller build (amd64)"
+          # Running the official Unfolded Circle builder natively for x86_64
+          docker run --rm --name builder-amd64 \
+            --user=$(id -u):$(id -g) \
+            -v ${GITHUB_WORKSPACE}:/workspace \
+            docker.io/unfoldedcircle/r2-pyinstaller:${PYTHON_VER} \
+            bash -c \
+            "python -m pip install -r /workspace/requirements.txt && \
+              cd /workspace/intg-${INTG_NAME} && \
+              pyinstaller --clean --onedir --name driver_build --collect-all zeroconf driver.py && \
+              mv dist /workspace/dist-amd64 && \
+              rm -rf build"
 
       - name: Prepare artifacts
         shell: bash
