@@ -83,13 +83,16 @@ jobs:
           echo "ARTIFACT_NAME=uc-intg-${{ env.DRIVER_ID }}-${{ env.VERSION }}-aarch64" >> $GITHUB_ENV
 
           mkdir -p docker-artifacts/bin-amd64 docker-artifacts/bin-arm64
+          
+          # Setup AMD64 Docker Context
           cp -r dist-amd64/driver_build/* docker-artifacts/bin-amd64/
           mv docker-artifacts/bin-amd64/driver_build docker-artifacts/bin-amd64/driver
+          cp driver.json docker-artifacts/bin-amd64/ 
           
-          # This will now succeed because the source folder is no longer empty
+          # Setup ARM64 Docker Context
           cp -r dist-arm64/driver_build/* docker-artifacts/bin-arm64/
           mv docker-artifacts/bin-arm64/driver_build docker-artifacts/bin-arm64/driver
-          cp driver.json docker-artifacts/
+          cp driver.json docker-artifacts/bin-arm64/
 
       - name: Create upload artifact archive
         shell: bash
