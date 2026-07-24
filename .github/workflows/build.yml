@@ -66,8 +66,8 @@ jobs:
       - name: Package Remote Asset
         run: |
           mkdir -p dist/sonyadcp
-          # Copies core files, ignoring errors if no png exists
-          cp -r src driver.json requirements.txt dist/sonyadcp/
+          # Copying python files directly from root instead of src/
+          cp *.py driver.json requirements.txt dist/sonyadcp/
           cp *.png dist/sonyadcp/ || true
           
           cd dist
